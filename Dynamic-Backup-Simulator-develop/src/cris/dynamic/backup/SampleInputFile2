@@ -1,0 +1,26 @@
+#Media Servers
+#media_server(*name*)
+media_server(server1)
+media_server(server2)
+
+#Storage Devices
+#stu(*name*,*media_server_name*, *throughput(MB/s)*, *throughput_variance(%)*, *max_data(MB)*, *current_data(MB)*)
+stu(storage1, server1, 100, .05, 1048576, 0)
+stu(storage2, server2, 100, .05, 1048576, 0)
+
+#Clients
+#client(*name*, *throughput(MB/s)*, *throughput_variance(%)*)
+client(client1, 100, .05)
+client(client2, 100, .05)
+client(client3, 100, .05)
+client(client4, 100, .05)
+client(client5, 100, .05)
+
+#Backups
+#=backup(*name*, *client*, *data_size(MB)*, *storage_constraints(*=any)*, *serverConstraints*, *startTime*, *endTime*)
+backup(backup1, client1, 5000, {storage1 | storage2}, *, *, *)
+backup(backup2, client2, 1000, {storage1 | storage2}, *, *, *)
+backup(backup3, client3, 1000, {storage1 | storage2}, *, *, *)
+backup(backup4, client4, 1000, {storage1 | storage2}, *, *, *)
+backup(backup5, client5, 1000, {storage1 | storage2}, *, *, *)
+backup(backup6, client5, 1000, {storage1 | storage2}, *, *, *)

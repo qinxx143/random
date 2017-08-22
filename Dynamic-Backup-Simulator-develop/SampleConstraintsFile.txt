@@ -1,0 +1,10 @@
+#SampleConstraintsFile.txt
+#Tied to SampleInputFile.txt
+#*backupName*(*storageConstraints*, *serverConstraints*, *startTimeConstraint*, *endTimeConstraint*)
+# a * indicates no constraints
+backup1({storage1, storage2}, *, *, *)
+backup2(storage2, *, *, *)
+backup3({storage1, storage2}, *, *, *)
+#Note, not all backups need constraints. If they are not on the list, they are given empty constraints.
+backup5(storage1, *, *, *)
+backup6({storage1, storage2}, *, *, *)
