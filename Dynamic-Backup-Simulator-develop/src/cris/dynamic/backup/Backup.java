@@ -15,12 +15,14 @@ public class Backup {
     private String       storageName;
     private String       serverName;
     private String       RTO;
+    private String       backupType;
     private boolean      active    = false;
     private boolean      completed = false;
     private long         startTime = 0;
     private long         endTime   = 0;
     private int          RPO;
     private int          backupFrequency;
+    private int          fullBackupFrequency;
 
     private Constraint   constraint;
 
@@ -131,6 +133,14 @@ public class Backup {
 		return backupFrequency;
 	}
 
+    public String getBackupType() {
+		return backupType;
+	}
+    
+    public int getFullBackupFrequency() {
+		return fullBackupFrequency;
+	}
+    
     /**
      * @return whether the backup is active
      */
@@ -276,6 +286,14 @@ public class Backup {
     public void setBackupFrequency(int backupFrequency) {
 		this.backupFrequency = backupFrequency;
 	}
+    
+    public void setBackupType(String backupType) {
+		this.backupType = backupType;
+	}
+    
+    public void setFullBackupFrequency(int fullBackupFrequency) {
+		this.fullBackupFrequency = fullBackupFrequency;
+	}
 
     /**
      * 
@@ -296,5 +314,6 @@ public class Backup {
         return false;
 
     }
+	
 
 }

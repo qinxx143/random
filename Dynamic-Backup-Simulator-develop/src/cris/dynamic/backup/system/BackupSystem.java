@@ -75,10 +75,10 @@ public class BackupSystem {
         parseInputFiles(systemConfigFile, systemConstraintFile);
         constraints.fillWindowAndConstraints(new ArrayList<String>(storageDevices.keySet()), clients, backups);
 
-        //give backups their constraints and make incremental if needed
+        //give backups their constraints and make incremental if needed ---> make it false to let it process full backup on the 1st day.
         for (final Map.Entry<String, Backup> backupEntry : backups.entrySet()) {
             backupEntry.getValue().setConstraint(constraints.getConstraint(backupEntry.getKey()));
-            if (isIncremental) {
+            if (false) {
                 backupEntry.getValue().makeIncrementalBackup();
             }
         }
@@ -166,6 +166,15 @@ public class BackupSystem {
         iterationNumber++;
         NaturalReflex naturalReflex = new NaturalReflex();
         for (final Map.Entry<String, Backup> entry : wholeBackupsMap.entrySet()) {
+        	    //set up backup Type by scheduler
+        	    String tempBackupType = scheduler.computeBackupTpye("Differential");
+        	    entry.getValue().setBackupType(tempBackupType);
+        	    //set up full backup frequency by scheduler
+        		if (entry.getValue().getBackupType() == "Differential") {
+        			int tempFullBackupFrequency = scheduler.computeFullBackupFrequency(3); //TODO using mathematical model to compute the full backup frequency
+        			entry.getValue().setFullBackupFrequency(tempFullBackupFrequency);
+        		}
+        	    //set up backup frequency
             entry.getValue().setBackupFrequency(naturalReflex.computeFrequency(entry.getValue().getRPO()));
             //System.out.println(entry.getValue().getBackupFrequency());
             if ((iterationNumber - 1) % entry.getValue().getBackupFrequency() !=0 || (iterationNumber - 1 ) < entry.getValue().getBackupFrequency()) {
@@ -181,10 +190,26 @@ public class BackupSystem {
         //TODO logging?
         writer.println("\r\nIteration " + iterationNumber + "\r\n");
 
-        //reset backups
+        //reset backups --->Brandom
+//        for (final Map.Entry<String, Backup> entry : backups.entrySet()) {
+//            entry.getValue().resetBackup(.05, false);  
+//            //System.out.println(entry.getKey() + " " + entry.getValue().getBackupFrequency());
+//            
+//        }
+        
+        //get the backupTpye and reset the backup based on the full backup frequency
         for (final Map.Entry<String, Backup> entry : backups.entrySet()) {
-            entry.getValue().resetBackup(.05, isIncremental); //TODO Remove hard coding. 
-            System.out.println(entry.getKey() + " " + entry.getValue().getBackupFrequency());
+        		if (entry.getValue().getBackupType() == "Differential") {
+        			if((iterationNumber - 1) % entry.getValue().getFullBackupFrequency() !=0 || (iterationNumber -1) < entry.getValue().getFullBackupFrequency()) {
+        				entry.getValue().resetBackup(.05, true);
+        				System.out.println(iterationNumber + " "+ "incre");
+        			}else {
+        				entry.getValue().resetBackup(.05, false);
+        				System.out.println(iterationNumber + " "+ "full");
+        			}
+        		}
+              
+            //System.out.println(entry.getKey() + " " + entry.getValue().getBackupFrequency());
             
         }
         

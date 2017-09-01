@@ -16,6 +16,9 @@ public abstract class Scheduler {
     private Map<String, Client>        clients;
 
     private Constraints                constraints;
+    private int                        fullBackupFrequency; 
+    private String 					  backupType;
+    
 
     /**
      * @return the backups
@@ -107,5 +110,16 @@ public abstract class Scheduler {
     public void setStorageDevices(Map<String, StorageDevice> storageDevices) {
         this.storageDevices = storageDevices;
     }
+    
+    //TODO using mathematical model
+    public int computeFullBackupFrequency(int fullBackupFrequency) {
+    		return fullBackupFrequency;
+    }
+    
+    //TODO using mathematical model
+    public String computeBackupTpye(String backupType) {
+    		return backupType;
+    }
+    
 
 }
