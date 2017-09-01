@@ -8,13 +8,15 @@ import java.util.Random;
 
 import org.apache.commons.math3.distribution.ParetoDistribution;
 
+import cris.dynamic.backup.system.Helper;
+
 public class SystemRandomizer {
-    private static String      outputFileName             = "system";
+    private static String      outputFileName             = "system_3";
 
     //Settings
-    private static int         numServers                 = 3;
+    private static int         numServers                 = 2;
 
-    private static int         numStorageUnits            = 6;
+    private static int         numStorageUnits            = 4;
 
     private static double      stuMeanThroughput          = 100;
 
@@ -22,7 +24,7 @@ public class SystemRandomizer {
 
     private static int         stuMaxData                 = 1000 * 10;
 
-    private static int         numClients                 = 100;
+    private static int         numClients                 = 10;
 
     private static double      clientsMeanThroughput      = 75;
 
@@ -32,10 +34,11 @@ public class SystemRandomizer {
     //Pareto Distribution
     private static double      backupsScale               = 100000;
     private static double      backupsShape               = 2;
-    //	private static double backupsMeanSize = 1000;
-    //	private static double backupsSizeDeviation = 200;
 
     private static String      throughputVariance         = ".05";
+    
+    private static int         RPORange                   =5;
+    
 
     private static PrintWriter writer;
     private static int         currentServerNum;
@@ -84,7 +87,7 @@ public class SystemRandomizer {
         }
 
         writer.println("#Backups");
-        writer.println("#backup(*name*, *client*, *data_size(MB)*)");
+        writer.println("#backup(*name*, *client*, *data_size(MB)*，criticality, *RTO*(s), *RPO(day)*)");
 
         for (int i = 0; i < backupsPerClient; i++) { //for each backup per client
             int tempClientNum = 0;
@@ -96,11 +99,15 @@ public class SystemRandomizer {
 
                 double dataSize = -1;
                 while (dataSize < 0.1) {
-                    //					dataSize = getGaussianValue(backupsMeanSize, backupsSizeDeviation, randomizer);
                     dataSize = getParetoValue(backupsScale, backupsShape);
                 }
+                
+                double criticality= 0.5 * Math.random() + 0.5;
+                String RTO = Helper.convertToTimestamp(getRTO(dataSize, criticality) * 1000);
+                
+                int RPO = getRPO(criticality);
 
-                writer.println("backup(" + backupName + ", " + associatedClient + ", " + String.valueOf(dataSize) + ")");
+                writer.println("backup(" + backupName + ", " + associatedClient + ", " + String.valueOf(dataSize) + ", " + criticality + ", " + RTO +", " + RPO + ")");
             }
 
         }
@@ -188,6 +195,16 @@ public class SystemRandomizer {
         final ParetoDistribution distribution = new ParetoDistribution(backupsScale, backupsShape);
         return distribution.sample();
     }
+    
+    private static long getRTO(double dataSize, double criticality ) {
+    		return (long) ((dataSize / (stuMeanThroughput /5) ) * (1.5-criticality));
+    }
+    
+    private static int getRPO(double criticality) {
+    		int result = (int) ((1 - criticality) * 10);
+    		return result + 1;
+    }
+  
 
     private static void writeParameters(final String outputFileName, final int numServers, final int numStorageUnits, final int numClients) {
         writer.println("#outputFileName = " + outputFileName);

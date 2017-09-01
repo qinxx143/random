@@ -10,25 +10,42 @@ public class Backup {
     private double       fullSize;
     private double       dataSize;
     private double       dataLeft;
+    private double       criticality;
     private String       clientName;
     private String       storageName;
     private String       serverName;
+    private String       RTO;
     private boolean      active    = false;
     private boolean      completed = false;
     private long         startTime = 0;
     private long         endTime   = 0;
+    private int          RPO;
+    private int          backupFrequency;
 
     private Constraint   constraint;
 
     //TODO	private double priorityValue = 0;
 
-    public Backup(final String name, final double dataSize) {
+    public Backup(final String name, final double dataSize, final String RTO, final int RPO) {
         this.name = name;
         fullSize = dataSize;
         this.dataSize = dataSize;
-        dataLeft = dataSize;
+        dataLeft = dataSize; 
+        this.RTO = RTO;
+        this.RPO = RPO; 
     }
 
+    public double getCriticality() {
+    		return criticality;
+    }
+    
+    public String getRTO() {
+    		return RTO;
+    }
+    
+    public int getRPO() {
+    		return RPO;
+    }
     /**
      * @return the clientName
      */
@@ -109,6 +126,10 @@ public class Backup {
     public String getStorageName() {
         return storageName;
     }
+    
+    public int getBackupFrequency() {
+		return backupFrequency;
+	}
 
     /**
      * @return whether the backup is active
@@ -163,13 +184,26 @@ public class Backup {
      * @param active
      *            the active to set
      */
+    
+    public void setCriticality(double criticality) {
+    		this.criticality = criticality;
+    }
+    
+    public void setRTO(String RTO) {
+    		this.RTO = RTO;
+    }
+    
+    public void setRPO(int RPO) {
+    		this.RPO = RPO;
+    }
+    
     public void setActive(boolean active) {
         this.active = active;
     }
 
     /**
      * @param clientName
-     *            the clientName to set
+     *            the clientName to set	
      */
     public void setClientName(String clientName) {
         this.clientName = clientName;
@@ -238,6 +272,10 @@ public class Backup {
     public void setStorageName(String storageName) {
         this.storageName = storageName;
     }
+    
+    public void setBackupFrequency(int backupFrequency) {
+		this.backupFrequency = backupFrequency;
+	}
 
     /**
      * 

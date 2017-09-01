@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.math3.distribution.TriangularDistribution;
 
@@ -43,13 +44,13 @@ public class DynamicAlgorithmV3 extends Scheduler {
 
         Map<String, Backup> backupsCopy = new HashMap<String, Backup>();
         backupsCopy.putAll(super.getBackups());
-
+        
         /**
          * Step 1. Update Backup Priority
          */
         backupsCopy = removeActiveAndCompleted(backupsCopy);
         final ArrayList<Backup> backupList = new ArrayList<Backup>(backupsCopy.values());
-
+        
         /**
          * Backup Priority Determination
          */
@@ -292,6 +293,16 @@ public class DynamicAlgorithmV3 extends Scheduler {
         }
         return toReturn;
     }
+    
+//    private Map<String, Backup> removeUnMapFrequency(final Map<String, Backup> backupsCopy){
+//    		final Map<String, Backup> toReturn = new HashMap<String, Backup>();
+//    		for (final Map.Entry<String, Backup> backupEntry : backupsCopy.entrySet()) {
+//    			if (backupEntry.getValue().getBackupFrequency() /day == 1) {
+//    				toReturn.put(backupEntry.getKey(), backupEntry.getValue());
+//    			}
+//    		}
+//    		return toReturn;
+//    }
 
     /**
      * Removes storage devices that are capped on backups.

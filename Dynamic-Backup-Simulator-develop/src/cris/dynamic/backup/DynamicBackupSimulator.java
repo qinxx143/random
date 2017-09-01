@@ -19,7 +19,7 @@ public class DynamicBackupSimulator {
 
     private static final int    stepSize             = 100;                                       //milliseconds per step
 
-    private static final int    iterations           = 1;
+    private static final int    iterations           = 5;
 
     private static final String scheduler            = "DynamicAlgorithmV3";   //             = new DynamicAlgorithmV3();
     //	private static final Scheduler	scheduler				= new RandomWithMaxV2(15);
@@ -29,8 +29,8 @@ public class DynamicBackupSimulator {
 
     private static final long   overallBackupWindow  = -1;                                        //overall backup window size in milliseconds
 
-    private static final String systemConfigFile     = "system.system";
-    private static final String systemConstraintFile = "system_1.constraint";
+    private static final String systemConfigFile     = "system_3.system";
+    private static final String systemConstraintFile = "system_3_1.constraint";
     private static final String dataLogFile          = "./logFile.csv";
 
     public static void main(String[] args) throws IOException {
@@ -47,15 +47,9 @@ public class DynamicBackupSimulator {
 
         final BackupSystem system = new BackupSystem(writer, systemConfigFile, systemConstraintFile, getScheduler(schedulerString),
                 windowSizeMultiplier, overallBackupWindow);
-
-        //        System.out.println("Parsed");
-
         simulate(system, iterations);
         system.printFinalOutput(systemConfigFile, systemConstraintFile, outputFile, dataLogFile, iterations);
-
-        //        System.out.println(outputFile);
         writer.close();
-        //        System.out.println("Simulated");
     }
 
     public static void simulate(final BackupSystem system, int iterations) {

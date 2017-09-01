@@ -10,8 +10,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import cris.dynamic.backup.Backup;
+import cris.dynamic.backup.algorithm.NaturalReflex;
 import cris.dynamic.backup.algorithm.Scheduler;
 import cris.dynamic.backup.client.Client;
 import cris.dynamic.backup.infrastructure.Constraint;
@@ -28,6 +30,8 @@ public class BackupSystem {
 
     private Map<String, Backup>              backups;
     private Map<String, Backup>              completedBackupsMap;
+    private Map<String, Backup>              wholeBackupsMap;
+    private Map<String,Backup>               unBackupsMap;
 
     private final Map<String, MediaServer>   servers;
     private final Map<String, Client>        clients;
@@ -63,7 +67,9 @@ public class BackupSystem {
         servers = new HashMap<String, MediaServer>();
         clients = new HashMap<String, Client>();
         storageDevices = new HashMap<String, StorageDevice>();
-
+        
+        wholeBackupsMap = new HashMap<String,Backup>();
+        unBackupsMap = new HashMap<String,Backup>();
         completedBackupsMap = new HashMap<String, Backup>();
         constraints = new Constraints(windowsizeMultiplier, overallWindowSize);
         parseInputFiles(systemConfigFile, systemConstraintFile);
@@ -147,19 +153,41 @@ public class BackupSystem {
         return writer;
     }
 
-    //TODO
+
     public void nextIteration() {
-        //        System.out.println("Finished Iteration: " + iterationNumber);
-        backups = completedBackupsMap;
+        
+        if(iterationNumber ==1) {
+          	backups = completedBackupsMap;
+        		wholeBackupsMap.putAll(backups);
+        }else {
+        		backups.putAll(wholeBackupsMap);
+        }
+        
         iterationNumber++;
+        NaturalReflex naturalReflex = new NaturalReflex();
+        for (final Map.Entry<String, Backup> entry : wholeBackupsMap.entrySet()) {
+            entry.getValue().setBackupFrequency(naturalReflex.computeFrequency(entry.getValue().getRPO()));
+            //System.out.println(entry.getValue().getBackupFrequency());
+            if ((iterationNumber - 1) % entry.getValue().getBackupFrequency() !=0 || (iterationNumber - 1 ) < entry.getValue().getBackupFrequency()) {
+            		backups.remove(entry.getKey());
+            		unBackupsMap.put(entry.getKey(), entry.getValue());	
+            }
+        }
+               
+        wholeBackupsMap = new HashMap<String,Backup>();
+        wholeBackupsMap.putAll(backups);
+        wholeBackupsMap.putAll(unBackupsMap);
 
         //TODO logging?
         writer.println("\r\nIteration " + iterationNumber + "\r\n");
 
         //reset backups
         for (final Map.Entry<String, Backup> entry : backups.entrySet()) {
-            entry.getValue().resetBackup(.05, isIncremental); //TODO Remove hard coding.
+            entry.getValue().resetBackup(.05, isIncremental); //TODO Remove hard coding. 
+            System.out.println(entry.getKey() + " " + entry.getValue().getBackupFrequency());
+            
         }
+        
         scheduler.incrementDay();
         scheduler.setBackups(backups);
 
@@ -399,7 +427,7 @@ public class BackupSystem {
         tempLine = tempLine.replaceAll("\\s+", ""); //remove all white space leaving comma separated values
         final String[] splitLine = tempLine.split(",");
 
-        final Backup backup = new Backup(splitLine[0], Double.parseDouble(splitLine[2]));
+        final Backup backup = new Backup(splitLine[0], Double.parseDouble(splitLine[2]), splitLine[4], Integer.parseInt(splitLine[5]));
         final Client associatedClient = clients.get(splitLine[1]);
         if (associatedClient == null) {
             throw new RuntimeException("Client not defined for Backup: " + splitLine[0]);
@@ -414,9 +442,9 @@ public class BackupSystem {
 
         //add to the map
         backups.put(backup.getName(), backup);
-
+        
     }
-
+    
     private void parseClient(final String line) {
         String tempLine = line.substring(line.indexOf('(') + 1, line.indexOf(')')); //get data without parenthesis
         tempLine = tempLine.replaceAll("\\s+", ""); //remove all white space leaving comma separated values
