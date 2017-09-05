@@ -12,11 +12,24 @@ public class LogEvent {
         private String       storageName = "";
         private String       serverName  = "";
         private String       clientName  = "";
+        private String       backupType  = "";
+        private String       dailyBackupType = "";
+        
         private long         duration;
         private double       throughput;
         private double       dataSize;
         private final long   time;
-
+        
+        public LogBuilder backupType(final String backupType) {
+        		this.backupType = backupType;
+        		return this;
+        }
+        
+        public LogBuilder dailyBackupType(final String dailyBackupType) {
+        		this.dailyBackupType = dailyBackupType;
+        		return this;
+        }
+        
         public LogBuilder(final Events event, final long time) {
             this.event = event;
             this.time = time;
@@ -69,6 +82,8 @@ public class LogEvent {
     private static final String DURATION_SUB   = "**duration**";
     private static final String DATA_SIZE_SUB  = "**dataSize**";
     private static final String THROUGHPUT_SUB = "**throughput**";
+    private static final String BACKUPTYPE_SUB = "**backupType**";
+    private static final String DAILYBACKUPTYPE_SUB = "**dailyBackupType**";
 
     private final String        eventMessage;
     private final String        backupName;
@@ -77,6 +92,8 @@ public class LogEvent {
     private final String        clientName;
     private final String        throughput;
     private final String        dataSize;
+    private final String        backupType;
+    private final String        dailyBackupType;
     private final long          duration;
 
     private final long          time;
@@ -90,11 +107,21 @@ public class LogEvent {
         final DecimalFormat format = new DecimalFormat("#.##");
         throughput = format.format(builder.throughput);
         dataSize = format.format(builder.dataSize);
+        backupType = builder.backupType;
+        dailyBackupType = builder.dailyBackupType;
         duration = builder.duration;
         time = builder.time;
     }
 
-    /**
+    public String getBackupType() {
+		return backupType;
+	}
+
+	public String getDailyBackupType() {
+		return dailyBackupType;
+	}
+
+	/**
      * @return the backupName
      */
     public String getBackupName() {
@@ -188,6 +215,14 @@ public class LogEvent {
 
         if (!"".equals(dataSize)) {
             toReturn = toReturn.replace(DATA_SIZE_SUB, dataSize);
+        }
+        
+        if (!"".equals(backupType)) {
+            toReturn = toReturn.replace(BACKUPTYPE_SUB, backupType);
+        }
+        
+        if (!"".equals(dailyBackupType)) {
+            toReturn = toReturn.replace(DAILYBACKUPTYPE_SUB, dailyBackupType);
         }
 
         return toReturn;

@@ -202,10 +202,12 @@ public class BackupSystem {
         		if (entry.getValue().getBackupType() == "Differential") {
         			if((iterationNumber - 1) % entry.getValue().getFullBackupFrequency() !=0 || (iterationNumber -1) < entry.getValue().getFullBackupFrequency()) {
         				entry.getValue().resetBackup(.05, true);
+        				entry.getValue().setDailyBackupType("incre");
         				System.out.println(iterationNumber + " "+ "incre");
         			}else {
         				entry.getValue().resetBackup(.05, false);
         				System.out.println(iterationNumber + " "+ "full");
+        				entry.getValue().setDailyBackupType("full");
         			}
         		}
               
@@ -318,8 +320,14 @@ public class BackupSystem {
 
                 //                numRemainingBackups--;
                 numActiveBackups++;
-
+                if (iterationNumber == 1) { //TODO hard code to assign the backup type to the backup
+                		backups.get(backupName).setBackupType(scheduler.computeBackupTpye("Differetial"));
+                		backups.get(backupName).setDailyBackupType("full");
+                	
+                }
                 printLog(writer, new LogBuilder(Events.BACKUP_START, time)
+                .backupType(backups.get(backupName).getBackupType())
+                .dailyBackupType(backups.get(backupName).getDailyBackupType())
                 .backup(backupName)
                 .storage(storageName)
                 .dataSize(backups.get(backupName).getDataSize())
@@ -403,6 +411,8 @@ public class BackupSystem {
                     }
 
                     printLog(writer, new LogBuilder(Events.BACKUP_COMPLETED, time + timeStep)
+                    .backupType(backupEntry.getValue().getBackupType())
+                    .dailyBackupType(backupEntry.getValue().getDailyBackupType())
                     .backup(backupEntry.getKey())
                     .storage(backupEntry.getValue().getStorageName())
                     .duration(backupEntry.getValue().getDuration())

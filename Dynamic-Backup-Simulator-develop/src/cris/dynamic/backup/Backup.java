@@ -16,6 +16,7 @@ public class Backup {
     private String       serverName;
     private String       RTO;
     private String       backupType;
+    private String       dailyBackupType;
     private boolean      active    = false;
     private boolean      completed = false;
     private long         startTime = 0;
@@ -139,6 +140,10 @@ public class Backup {
     
     public int getFullBackupFrequency() {
 		return fullBackupFrequency;
+	}
+    
+	public String getDailyBackupType() {
+		return dailyBackupType;
 	}
     
     /**
@@ -294,6 +299,10 @@ public class Backup {
     public void setFullBackupFrequency(int fullBackupFrequency) {
 		this.fullBackupFrequency = fullBackupFrequency;
 	}
+    
+	public void setDailyBackupType(String dailyBackupType) {
+		this.dailyBackupType = dailyBackupType;
+	}
 
     /**
      * 
@@ -314,6 +323,10 @@ public class Backup {
         return false;
 
     }
+
+
+
+
 	
 
 }
