@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import cris.dynamic.backup.Backup;
+import cris.dynamic.backup.SnapshotChain;
 import cris.dynamic.backup.algorithm.NaturalReflex;
 import cris.dynamic.backup.algorithm.Scheduler;
 import cris.dynamic.backup.client.Client;
@@ -23,6 +24,7 @@ import cris.dynamic.backup.infrastructure.LogEvent;
 import cris.dynamic.backup.infrastructure.LogEvent.LogBuilder;
 import cris.dynamic.backup.server.MediaServer;
 import cris.dynamic.backup.server.StorageDevice;
+import sun.print.PrinterJobWrapper;
 
 public class BackupSystem {
 
@@ -48,6 +50,7 @@ public class BackupSystem {
     private int                              numTotalBackups;
     private int                              iterationNumber     = 1;
     private final PrintWriter                writer;
+    private final PrintWriter                snapshotChainsWriter;
 
     //Metrics
     private double                           totalDataBackedUp     = 0;
@@ -61,7 +64,7 @@ public class BackupSystem {
 
     private long                             time                = 0;
 
-    public BackupSystem(final PrintWriter writer, final String systemConfigFile, String systemConstraintFile, final Scheduler scheduler,
+    public BackupSystem(final PrintWriter writer, final PrintWriter snapshotChainsWriter, final String systemConfigFile, String systemConstraintFile, final Scheduler scheduler,
             final int windowsizeMultiplier, final long overallWindowSize) throws IOException {
         backups = new HashMap<String, Backup>();
         servers = new HashMap<String, MediaServer>();
@@ -88,7 +91,7 @@ public class BackupSystem {
         numTotalBackups = backups.size();
         //        numRemainingBackups = numTotalBackups;
         this.writer = writer;
-
+        this.snapshotChainsWriter = snapshotChainsWriter;
         this.scheduler = scheduler;
         fillScheduler();
 
@@ -189,7 +192,7 @@ public class BackupSystem {
 
         //TODO logging?
         writer.println("\r\nIteration " + iterationNumber + "\r\n");
-
+        snapshotChainsWriter.println("\n");
         //reset backups --->Brandom
 //        for (final Map.Entry<String, Backup> entry : backups.entrySet()) {
 //            entry.getValue().resetBackup(.05, false);  
@@ -409,6 +412,24 @@ public class BackupSystem {
                     if (backupEntry.getValue().missedBackupWindow(time + timeStep)) {
                         ++missedWindows;
                     }
+                    
+                    //put the completed backup on the snapshot chains for restore
+                    SnapshotChain snapshotChain = new SnapshotChain();
+                    snapshotChain.setBackupName(backupEntry.getKey());
+                    snapshotChain.setBackupType(backupEntry.getValue().getBackupType());
+                    snapshotChain.setDailyBackupType(backupEntry.getValue().getDailyBackupType());
+                    snapshotChain.setIterationNumber(iterationNumber);
+                    snapshotChain.setStorageName(backupEntry.getValue().getStorageName());
+                    snapshotChain.setDataSize(backupEntry.getValue().getDataSize());
+                    
+                    printLog(snapshotChainsWriter, new LogBuilder(Events.SNAPSHOTCHAINS, time + timeStep)
+                    .iterationNumber(snapshotChain.getIterationNumber())	
+                    .backupType(snapshotChain.getBackupType())
+                    .dailyBackupType(snapshotChain.getDailyBackupType())
+                    .dataSize(snapshotChain.getDataSize())
+                    .storage(snapshotChain.getStorageName())
+                    .build());
+                    
 
                     printLog(writer, new LogBuilder(Events.BACKUP_COMPLETED, time + timeStep)
                     .backupType(backupEntry.getValue().getBackupType())

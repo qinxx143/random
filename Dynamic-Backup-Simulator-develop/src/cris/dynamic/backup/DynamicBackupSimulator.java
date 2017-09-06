@@ -44,12 +44,15 @@ public class DynamicBackupSimulator {
             final String schedulerString, final String outputFile) throws FileNotFoundException, UnsupportedEncodingException, IOException {
 
         final PrintWriter writer = new PrintWriter(outputFile, "UTF-8");
+        final PrintWriter snapshotChainsWriter = new PrintWriter("snapshotChain.log", "UTF-8");
+      
 
-        final BackupSystem system = new BackupSystem(writer, systemConfigFile, systemConstraintFile, getScheduler(schedulerString),
+        final BackupSystem system = new BackupSystem(writer,snapshotChainsWriter, systemConfigFile, systemConstraintFile, getScheduler(schedulerString),
                 windowSizeMultiplier, overallBackupWindow);
         simulate(system, iterations);
         system.printFinalOutput(systemConfigFile, systemConstraintFile, outputFile, dataLogFile, iterations);
         writer.close();
+        snapshotChainsWriter.close();
     }
 
     public static void simulate(final BackupSystem system, int iterations) {

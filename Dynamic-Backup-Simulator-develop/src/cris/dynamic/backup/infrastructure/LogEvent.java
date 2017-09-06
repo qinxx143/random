@@ -19,6 +19,13 @@ public class LogEvent {
         private double       throughput;
         private double       dataSize;
         private final long   time;
+        private int          iterationNumber;
+        
+        
+        public LogBuilder iterationNumber(final int iterationNumber) {
+    		this.iterationNumber = iterationNumber;
+    		return this;
+        }
         
         public LogBuilder backupType(final String backupType) {
         		this.backupType = backupType;
@@ -84,6 +91,7 @@ public class LogEvent {
     private static final String THROUGHPUT_SUB = "**throughput**";
     private static final String BACKUPTYPE_SUB = "**backupType**";
     private static final String DAILYBACKUPTYPE_SUB = "**dailyBackupType**";
+    private static final String ITERATION_NUMBER_SUB ="**iterationNumber**";
 
     private final String        eventMessage;
     private final String        backupName;
@@ -95,8 +103,8 @@ public class LogEvent {
     private final String        backupType;
     private final String        dailyBackupType;
     private final long          duration;
-
-    private final long          time;
+    private final long          time; 
+    private final int           iterationNumber;
 
     private LogEvent(LogBuilder builder) {
         eventMessage = builder.event.getEventText();
@@ -111,6 +119,7 @@ public class LogEvent {
         dailyBackupType = builder.dailyBackupType;
         duration = builder.duration;
         time = builder.time;
+        iterationNumber = builder.iterationNumber;
     }
 
     public String getBackupType() {
@@ -184,7 +193,11 @@ public class LogEvent {
         return time;
     }
 
-    @Override
+    public int getIterationNumber() {
+		return iterationNumber;
+	}
+
+	@Override
     public String toString() {
         String toReturn = Helper.convertToTimestamp(time);
         toReturn += " " + eventMessage;
@@ -223,6 +236,10 @@ public class LogEvent {
         
         if (!"".equals(dailyBackupType)) {
             toReturn = toReturn.replace(DAILYBACKUPTYPE_SUB, dailyBackupType);
+        } 
+        
+        if (!"".equals(String.valueOf(iterationNumber))) {
+            toReturn = toReturn.replace(ITERATION_NUMBER_SUB, String.valueOf(iterationNumber));
         }
 
         return toReturn;
