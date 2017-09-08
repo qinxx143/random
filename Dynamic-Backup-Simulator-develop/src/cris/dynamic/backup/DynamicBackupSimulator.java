@@ -19,7 +19,7 @@ public class DynamicBackupSimulator {
 
     private static final int    stepSize             = 100;                                       //milliseconds per step
 
-    private static final int    iterations           = 5;
+    public static final int    iterations           = 5;
 
     private static final String scheduler            = "DynamicAlgorithmV3";   //             = new DynamicAlgorithmV3();
     //	private static final Scheduler	scheduler				= new RandomWithMaxV2(15);

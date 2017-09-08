@@ -24,7 +24,7 @@ public class SystemRandomizer {
 
     private static int         stuMaxData                 = 1000 * 10;
 
-    private static int         numClients                 = 10;
+    public static int         numClients                 = 10;
 
     private static double      clientsMeanThroughput      = 75;
 

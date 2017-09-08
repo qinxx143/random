@@ -1,5 +1,6 @@
 package cris.dynamic.backup.system;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -22,6 +23,16 @@ public class Helper {
         final long hour = (time / (1000 * 60 * 60)) % 24;
 
         return String.format("%02d:%02d:%02d", hour, minute, second);
+    }
+    
+    public static int converToTimeSeconds(String time) {
+    	  //02:00:00
+    	    int hour = Integer.parseInt(time.substring(0, 2));
+    	    int minute = Integer.parseInt(time.substring(3, 5));
+    	    int second = Integer.parseInt(time.substring(6, 8));
+    	    
+    	    int seconds = hour * 3600 + minute * 60 + second;
+    	    return seconds;
     }
 
     //Credit to Marimuthu Madasamy on stack overflow
