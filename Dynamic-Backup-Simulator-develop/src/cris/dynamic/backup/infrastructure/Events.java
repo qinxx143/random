@@ -6,7 +6,7 @@ public enum Events {
     BACKUP_START("**backupType**(**dailyBackupType**): **backup** of size: **dataSize** started to **storageDevice**"),
     BACKUP_COMPLETED("**backupType**(**dailyBackupType**): **backup** to **storageDevice** completed. Duration: **duration**. Throughput: **throughput**"),
     ALL_BACKUPS_COMPLETED("All backups completed. Total data size: **dataSize**"),
-    SNAPSHOTCHAINS("Day **iterationNumber**: **backupType**(**dailyBackupType**) , **dataSize** --> **storageDevice**");
+    SNAPSHOTCHAINS("Day **iterationNumber**: **backup** **backupType**(**dailyBackupType**) , **dataSize** --> **storageDevice**");
 	
 	
 

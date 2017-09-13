@@ -8,12 +8,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
+import java.util.Random;
+
+import javax.sql.RowSetInternal;
 
 import org.apache.commons.math3.distribution.TriangularDistribution;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
+
 import cris.dynamic.backup.Backup;
+import cris.dynamic.backup.Restore;
+import cris.dynamic.backup.SnapshotChain;
 import cris.dynamic.backup.infrastructure.HistoricalDataPoint;
 import cris.dynamic.backup.server.StorageDevice;
+import cris.dynamic.backup.system.BackupSystem;
+import cris.dynamic.backup.system.Helper;
+import cris.dynamic.backup.system.RestoreSystem;
+import javafx.scene.shape.Line;
 
 public class DynamicAlgorithmV3 extends Scheduler {
 
@@ -24,11 +37,14 @@ public class DynamicAlgorithmV3 extends Scheduler {
 
     private final Map<String, Map<String, ArrayList<HistoricalDataPoint>>> storageAssociationThroughputs;    //Map<BackupName, Map<StorageName, ArrayList<Throughputs>
     private final Map<String, ArrayList<HistoricalDataPoint>>              backupHistoricalThroughputs;      //<String(backupName), ArrayList<Throughputs>(throughput values for that backup)>
-
+    private final Map<String, Restore>                                     unScheduledRestoresMap; 
+    private final ArrayList<Restore>                                       pieceRestoresList;
     public DynamicAlgorithmV3() {
         day = 0;
         storageAssociationThroughputs = new HashMap<String, Map<String, ArrayList<HistoricalDataPoint>>>();
         backupHistoricalThroughputs = new HashMap<String, ArrayList<HistoricalDataPoint>>();
+        unScheduledRestoresMap = new HashMap<String,Restore>();
+        pieceRestoresList = new ArrayList<Restore>();
     }
 
     @Override
@@ -294,16 +310,6 @@ public class DynamicAlgorithmV3 extends Scheduler {
         return toReturn;
     }
     
-//    private Map<String, Backup> removeUnMapFrequency(final Map<String, Backup> backupsCopy){
-//    		final Map<String, Backup> toReturn = new HashMap<String, Backup>();
-//    		for (final Map.Entry<String, Backup> backupEntry : backupsCopy.entrySet()) {
-//    			if (backupEntry.getValue().getBackupFrequency() /day == 1) {
-//    				toReturn.put(backupEntry.getKey(), backupEntry.getValue());
-//    			}
-//    		}
-//    		return toReturn;
-//    }
-
     /**
      * Removes storage devices that are capped on backups.
      * 
@@ -320,5 +326,98 @@ public class DynamicAlgorithmV3 extends Scheduler {
         }
         return toReturn;
     }
+    
+    //restore 
+    public Map<String, Restore> getNewRestores(long currentTime) {
+    	    // check if there is scheduled but partial uncompleted restore
+    	    day =3;
+    		if(!pieceRestoresList.isEmpty()){
+    			Restore pieceRestore = new Restore();
+    			pieceRestore = pieceRestoresList.get(0);
+    			Map<String, Restore> returnRestore = new HashMap<String,Restore>();
+    			returnRestore.put(pieceRestore.getRestoreName(), pieceRestore);
+    			pieceRestoresList.remove(0);
+    	    		return returnRestore;  			
+    		}
+    	
+        //cheack if there is requested but unscheduled restore
+    		Map<String, Restore> selectedRestore = new HashMap<String,Restore>();
+    		String selectedRestoreName = "";
+    		Restore selectedRestoreValue = new Restore();
+    		
+    		if(!unScheduledRestoresMap.isEmpty()) {
+    			selectedRestoreName = getRandomRestore(unScheduledRestoresMap);
+        	    selectedRestoreValue = unScheduledRestoresMap.get(selectedRestoreName);
+        	    selectedRestore.put(selectedRestoreName,selectedRestoreValue);
+        	    unScheduledRestoresMap.remove(selectedRestoreName);
+    		}else {//if there is no unscheduled requested restore
+    			
+    			//read all the restore request of the current day
+        	    Map<String, Restore> restoresCopy = new HashMap<String, Restore>();
+        	    Map<String, Restore> restoresAssignment = new HashMap<String,Restore>();
+        	    restoresCopy.putAll(RestoreSystem.getDayToRestores().get(String.valueOf(day+1)));  
+        	    
+        	    //find the restore request matched with the current time
+        	    for (final Map.Entry<String, Restore> restoreCopyEntry : restoresCopy.entrySet()) {
+        	    	    long associatedRequestTime = (long) Helper.converToTimeSeconds(restoreCopyEntry.getValue().getRequestTime());
+        	    		if ( associatedRequestTime == currentTime/1000) {
+        	    			restoresAssignment.put(restoreCopyEntry.getKey(),restoreCopyEntry.getValue());
+        	    		}
+        	    }
+        	    
+        	    //randomly select one of the restore request 
+        	    unScheduledRestoresMap.putAll(restoresAssignment);
+        	    selectedRestoreName = getRandomRestore(restoresAssignment);
+        	    selectedRestoreValue = restoresAssignment.get(selectedRestoreName);
+        	    selectedRestore.put(selectedRestoreName,selectedRestoreValue);
+        	    unScheduledRestoresMap.remove(selectedRestoreName);
+    			
+    		}
+    		
+		//read the snapshot chains map
+		Map<String, Map<String, SnapshotChain>>snapshotChainMap = BackupSystem.getSnapshotChainMap();
+		String restoreNameID = selectedRestoreName.substring(7, selectedRestoreName.length());
+		String associatedBackupName = "backup" + restoreNameID;
+		
+		
+		
+		//to find the restore associated snapshotChainMap day1, day2, ----> current day
+		for ( int i =1  ; i <= (day +1) ; i++) {
+			String temDay = String.valueOf(i);
+			for (final Map.Entry<String, SnapshotChain> entry : snapshotChainMap.get(temDay).entrySet()) {
+				if (entry.getValue().getBackupName().contains(associatedBackupName)) {
+					Restore pieceRestore = new Restore();
+					pieceRestore.setRestoreName(selectedRestoreName);
+					pieceRestore.setDataDay(i);
+					pieceRestore.setDataSize(entry.getValue().getDataSize());
+					pieceRestore.setStorageName(entry.getValue().getStorageName());
+					pieceRestore.setClientName(entry.getValue().getClientName());
+					pieceRestore.setServerName(entry.getValue().getServerName());
+					pieceRestoresList.add(pieceRestore);						
+				}						
+			}			
+		}
+		
+		Map<String, Restore> returnRestore = new HashMap<String,Restore>();
+		returnRestore.put(selectedRestoreName, pieceRestoresList.get(0)) ;
+		pieceRestoresList.remove(0);
+    		return returnRestore;
+    	
+    }
+    
+    public static String getRandomRestore (Map<String, Restore> restoresAssignment) {  
+    Random random = new Random();    
+    String returnRestore = "";
+    	int rn = random.nextInt(restoresAssignment.size());  
+        int i = 0;  
+        for (final Map.Entry<String, Restore> entry : restoresAssignment.entrySet()) {  
+            if(i==rn){  
+               returnRestore = entry.getKey() ;  
+            }  
+            i++;  
+        } 
+        return returnRestore;
+    }  
 
+    
 }

@@ -3,6 +3,7 @@ package cris.dynamic.backup.algorithm;
 import java.util.Map;
 
 import cris.dynamic.backup.Backup;
+import cris.dynamic.backup.Restore;
 import cris.dynamic.backup.client.Client;
 import cris.dynamic.backup.infrastructure.Constraints;
 import cris.dynamic.backup.server.MediaServer;
@@ -14,6 +15,7 @@ public abstract class Scheduler {
     private Map<String, StorageDevice> storageDevices;
     private Map<String, MediaServer>   servers;
     private Map<String, Client>        clients;
+    private Map<String, Restore>       restores;
 
     private Constraints                constraints;
     private int                        fullBackupFrequency; 
@@ -111,7 +113,15 @@ public abstract class Scheduler {
         this.storageDevices = storageDevices;
     }
     
-    //TODO using mathematical model
+    public Map<String, Restore> getRestores() {
+		return restores;
+	}
+
+	public void setRestores(Map<String, Restore> restores) {
+		this.restores = restores;
+	}
+
+	//TODO using mathematical model
     public int computeFullBackupFrequency(int fullBackupFrequency) {
     		return fullBackupFrequency;
     }

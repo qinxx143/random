@@ -6,11 +6,11 @@ import cris.dynamic.backup.system.Helper;
 
 public class Restore {
 	
-	private String 	restoreName;
+	private String  restoreName;
 	private String  requestTime; 
-	
 	private int     requestDay;
-	private double  fullSize;
+	private int     dataDay;
+	
     private double  dataSize;
     private double  dataLeft;
 	private String	clientName;//¿Í»§¶Ë
@@ -26,12 +26,10 @@ public class Restore {
     private long         endTime   = 0;
     private long 		 penalty = 0;
     
-    
 	public Restore() {
 	}
 	public Restore(String name, double dataSize, String storageName) {
 		this.restoreName = name;
-        fullSize = dataSize;
         this.dataSize = dataSize;
         dataLeft = dataSize;
         this.storageName = storageName;
@@ -90,12 +88,7 @@ public class Restore {
 	public void setEndTime(long endTime) {
 		this.endTime = endTime;
 	}
-	public double getFullSize() {
-		return fullSize;
-	}
-	public void setFullSize(double fullSize) {
-		this.fullSize = fullSize;
-	}
+
 	public double getDataLeft() {
 		return dataLeft;
 	}
@@ -159,6 +152,12 @@ public class Restore {
 	}
 	public long getPenalty(){
 		return this.penalty;
+	}
+	public int getDataDay() {
+		return dataDay;
+	}
+	public void setDataDay(int dataDay) {
+		this.dataDay = dataDay;
 	}
 
 }

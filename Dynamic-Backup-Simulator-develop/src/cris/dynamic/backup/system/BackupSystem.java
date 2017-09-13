@@ -34,6 +34,8 @@ public class BackupSystem {
     private Map<String, Backup>              completedBackupsMap;
     private Map<String, Backup>              wholeBackupsMap;
     private Map<String,Backup>               unBackupsMap;
+    private Map<String, SnapshotChain>       backupToSnapshotMap;
+    private static Map<String, Map<String, SnapshotChain>>       snapshotChainMap = new HashMap<String,Map<String, SnapshotChain>>(); //day to SnapshotChain
 
     private final Map<String, MediaServer>   servers;
     private final Map<String, Client>        clients;
@@ -73,6 +75,7 @@ public class BackupSystem {
         
         wholeBackupsMap = new HashMap<String,Backup>();
         unBackupsMap = new HashMap<String,Backup>();
+        backupToSnapshotMap = new HashMap<String,SnapshotChain>();
         completedBackupsMap = new HashMap<String, Backup>();
         constraints = new Constraints(windowsizeMultiplier, overallWindowSize);
         parseInputFiles(systemConfigFile, systemConstraintFile);
@@ -167,6 +170,7 @@ public class BackupSystem {
         }
         
         iterationNumber++;
+        backupToSnapshotMap = new HashMap<String,SnapshotChain>();
         NaturalReflex naturalReflex = new NaturalReflex();
         for (final Map.Entry<String, Backup> entry : wholeBackupsMap.entrySet()) {
         	    //set up backup Type by scheduler
@@ -206,10 +210,10 @@ public class BackupSystem {
         			if((iterationNumber - 1) % entry.getValue().getFullBackupFrequency() !=0 || (iterationNumber -1) < entry.getValue().getFullBackupFrequency()) {
         				entry.getValue().resetBackup(.05, true);
         				entry.getValue().setDailyBackupType("incre");
-        				System.out.println(iterationNumber + " "+ "incre");
+        				//System.out.println(iterationNumber + " "+ "incre");
         			}else {
         				entry.getValue().resetBackup(.05, false);
-        				System.out.println(iterationNumber + " "+ "full");
+        				//System.out.println(iterationNumber + " "+ "full");
         				entry.getValue().setDailyBackupType("full");
         			}
         		}
@@ -324,7 +328,7 @@ public class BackupSystem {
                 //                numRemainingBackups--;
                 numActiveBackups++;
                 if (iterationNumber == 1) { //TODO hard code to assign the backup type to the backup
-                		backups.get(backupName).setBackupType(scheduler.computeBackupTpye("Differetial"));
+                		backups.get(backupName).setBackupType(scheduler.computeBackupTpye("Differential"));
                 		backups.get(backupName).setDailyBackupType("full");
                 	
                 }
@@ -421,8 +425,11 @@ public class BackupSystem {
                     snapshotChain.setIterationNumber(iterationNumber);
                     snapshotChain.setStorageName(backupEntry.getValue().getStorageName());
                     snapshotChain.setDataSize(backupEntry.getValue().getDataSize());
+                    backupToSnapshotMap.put(backupEntry.getKey(), snapshotChain);
+                    snapshotChainMap.put(String.valueOf(iterationNumber), backupToSnapshotMap);
                     
                     printLog(snapshotChainsWriter, new LogBuilder(Events.SNAPSHOTCHAINS, time + timeStep)
+                    .backup(snapshotChain.getBackupName())
                     .iterationNumber(snapshotChain.getIterationNumber())	
                     .backupType(snapshotChain.getBackupType())
                     .dailyBackupType(snapshotChain.getDailyBackupType())
@@ -629,6 +636,10 @@ public class BackupSystem {
     private void printLog(final PrintWriter writer, final LogEvent event) {
         writer.println(event.toString());
 
+    }
+    
+    public static Map<String, Map<String, SnapshotChain>> getSnapshotChainMap(){
+    		return snapshotChainMap;
     }
 
 }

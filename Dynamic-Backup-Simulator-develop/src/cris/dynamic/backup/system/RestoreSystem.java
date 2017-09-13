@@ -48,7 +48,7 @@ public class RestoreSystem {
     private Map<String, String> 		    requestStoragesMap;//请求的storage
     private Map<String,Integer>			requestRestoreDayMap;//请求还原的天数
     private Map<String, Restore>         restores;
-    private Map<String, Map<String, Restore>> dayTorestores;
+    private static Map<String, Map<String, Restore>> dayTorestores;
     
     //Metrics
     private double	dailyDataRestoreUp = 0;
@@ -75,12 +75,10 @@ public class RestoreSystem {
 		
 	}
 	
-	private void parseConfigLine(String line, int lineCount) {
-		//Day  1
-		//restore0: 02:00:00
+	
+	private void parseRestoreSystemLine(String line, int lineCount) {
 		restore = new Restore();
-		
-		
+			
 		if((line.indexOf("restore")==-1) && (line.indexOf("Day")== -1))return;
 		
 		if (line.contains("Day")) {
@@ -101,16 +99,6 @@ public class RestoreSystem {
 		}
 		dayTorestores.put(String.valueOf(restoreRequestDay), restores);
 		
-		//00:09:00 DFO_B_r0_n0_c1_d4
-//		if(line.indexOf("DFO_B_")==-1)return;
-//		String restoreTime = line.substring(0,8);
-//		String requestName = line.substring(9,line.length());
-//		int restoreDay = Integer.parseInt(line.substring(line.lastIndexOf("d")+1,line.length()));
-//		RestoreRequest request = new RestoreRequest();
-//		request.setRestoreDay(restoreDay);
-//		request.setRestoreTime(restoreTime);
-//		request.setRequestName(requestName);
-//		requests.put(request.getRequestName(), request);
 	}
 	
 	private void parseInputFiles(String systemRestoreFile) throws Exception {
@@ -124,22 +112,20 @@ public class RestoreSystem {
                 //do the thing
                 line = line.trim();
                 if (!"".equals(line) && line.charAt(0) != '#') { //ignore this line
-                    parseConfigLine(line, lineCount);
+                		parseRestoreSystemLine(line, lineCount);
                 }
                 lineCount++; //increment line count for error message
             }
-            //test the reading of the restore system file
-            for (final Map.Entry<String, Restore> Entry : restores.entrySet()) {
-            		String x = Entry.getValue().getRestoreName();
-            		String y = Entry.getValue().getRequestTime();
-            		System.out.println(restoreRequestDay + " "+ x + " " + y);
-            	
-            }
+
         } finally {
             if (reader != null) {
                 reader.close();
             }
         }
+	}
+	
+	public static Map<String, Map<String, Restore>> getDayToRestores(){
+		return dayTorestores;
 	}
 
 }

@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -14,6 +15,7 @@ import cris.dynamic.backup.algorithm.DynamicAlgorithmV3;
 import cris.dynamic.backup.algorithm.RandomWithMaxV2;
 import cris.dynamic.backup.algorithm.Scheduler;
 import cris.dynamic.backup.system.BackupSystem;
+import cris.dynamic.backup.system.RestoreSystem;
 
 public class DynamicBackupSimulator {
 
@@ -37,6 +39,16 @@ public class DynamicBackupSimulator {
 
         final String outputFile = generateOutputFileName(systemConfigFile);
         runSimulation(systemConfigFile, systemConstraintFile, scheduler, outputFile);
+        
+        //test restore
+		DynamicAlgorithmV3 scheduler= new DynamicAlgorithmV3();
+		try {
+			RestoreSystem restoreSystem = new RestoreSystem("restore.system");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	//TODO map cannot put the same restore for different days
+		scheduler.getNewRestores(0);
 
     }
 
@@ -50,9 +62,11 @@ public class DynamicBackupSimulator {
         final BackupSystem system = new BackupSystem(writer,snapshotChainsWriter, systemConfigFile, systemConstraintFile, getScheduler(schedulerString),
                 windowSizeMultiplier, overallBackupWindow);
         simulate(system, iterations);
+        //Map<String, Map<String, SnapshotChain>> snapshotChainMap = system.getSnapshotChainMap();
         system.printFinalOutput(systemConfigFile, systemConstraintFile, outputFile, dataLogFile, iterations);
         writer.close();
         snapshotChainsWriter.close();
+        
     }
 
     public static void simulate(final BackupSystem system, int iterations) {

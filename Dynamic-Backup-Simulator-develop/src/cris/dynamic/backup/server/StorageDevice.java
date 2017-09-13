@@ -17,6 +17,8 @@ public class StorageDevice implements Comparable<StorageDevice> {
     private double                  totalActiveBackupData    = 0;
     private double                  smallestActiveBackupData = -1;
     private final ArrayList<String> activeBackups;
+    
+    private final ArrayList<String> activeRestores;
 
     public StorageDevice(final String name, final String serverName, final double throughput, final double throughputVariance,
             final double maxData, final double currentDataSize) {
@@ -30,6 +32,8 @@ public class StorageDevice implements Comparable<StorageDevice> {
         this.maxData = maxData;
         this.currentDataSize = currentDataSize;
         activeBackups = new ArrayList<String>();
+        
+        activeRestores = new ArrayList<String>();
 
     }
 
@@ -243,7 +247,11 @@ public class StorageDevice implements Comparable<StorageDevice> {
         }
     }
 
-    private boolean isBetween(double x, double lower, double upper) {
+    public ArrayList<String> getActiveRestores() {
+		return activeRestores;
+	}
+
+	private boolean isBetween(double x, double lower, double upper) {
         return lower <= x && x <= upper;
     }
 
