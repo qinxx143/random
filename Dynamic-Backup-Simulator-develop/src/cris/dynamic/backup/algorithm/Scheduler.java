@@ -46,6 +46,10 @@ public abstract class Scheduler {
     public abstract String getName();
 
     public abstract Map<String, String> getNewBackups(final long currentTime);
+    
+    public abstract Map<String,Restore> getNewRestores(final long currentTime);
+    
+    public abstract Map<String, Restore> removeActiveAndCompletedRestore(final Map<String, Restore> restoresAssignment);
 
     /**
      * @return the servers
@@ -130,6 +134,10 @@ public abstract class Scheduler {
     public String computeBackupTpye(String backupType) {
     		return backupType;
     }
+
+	public abstract void updatePieceRestoresMap(Restore restore);
+
     
+    //public abstract void removeCompletedRestores(Restore restore);
 
 }

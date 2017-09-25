@@ -15,7 +15,7 @@ public class RestoreRandomizer {
 	
 	private static final  int    restoreAtomic = 3600; 
 	
-	private static final double  faultRate= 0.8;
+	private static final double  faultRate= 0.3;
 	
 	private static PrintWriter restoreWriter;
 	

@@ -9,6 +9,7 @@ public class LogEvent {
     public static class LogBuilder {
         private final Events event;
         private String       backupName  = "";
+        private String       restoreName = "";
         private String       storageName = "";
         private String       serverName  = "";
         private String       clientName  = "";
@@ -20,7 +21,18 @@ public class LogEvent {
         private double       dataSize;
         private final long   time;
         private int          iterationNumber;
+        private int          dataBeBackupDay;
         
+        
+        public LogBuilder restore(final String restoreName) {
+    		this.restoreName = restoreName;
+    		return this;
+        }
+        
+        public LogBuilder backupDay(final int dataBeBackupDay) {
+    		this.dataBeBackupDay = dataBeBackupDay;
+    		return this;
+        }
         
         public LogBuilder iterationNumber(final int iterationNumber) {
     		this.iterationNumber = iterationNumber;
@@ -81,7 +93,8 @@ public class LogEvent {
             return this;
         }
     }
-
+    
+    private static final String RESTORE_SUB     = "**restore**";
     private static final String BACKUP_SUB     = "**backup**";
     private static final String STORAGE_SUB    = "**storageDevice**";
     private static final String SERVER_SUB     = "**server**";
@@ -92,8 +105,10 @@ public class LogEvent {
     private static final String BACKUPTYPE_SUB = "**backupType**";
     private static final String DAILYBACKUPTYPE_SUB = "**dailyBackupType**";
     private static final String ITERATION_NUMBER_SUB ="**iterationNumber**";
+    private static final String DATA_BE_BACKUP_DAY_SUB ="**backupDay**";
 
     private final String        eventMessage;
+    private final String        restoreName;
     private final String        backupName;
     private final String        storageName;
     private final String        serverName;
@@ -105,10 +120,12 @@ public class LogEvent {
     private final long          duration;
     private final long          time; 
     private final int           iterationNumber;
+    private final int           dataBeBackupDay;
 
     private LogEvent(LogBuilder builder) {
         eventMessage = builder.event.getEventText();
         backupName = builder.backupName;
+        restoreName = builder.restoreName;
         storageName = builder.storageName;
         serverName = builder.serverName;
         clientName = builder.clientName;
@@ -120,8 +137,13 @@ public class LogEvent {
         duration = builder.duration;
         time = builder.time;
         iterationNumber = builder.iterationNumber;
+        dataBeBackupDay = builder.dataBeBackupDay;;
     }
 
+    public String getRestoreName() {
+		return restoreName;
+	}
+    
     public String getBackupType() {
 		return backupType;
 	}
@@ -197,6 +219,10 @@ public class LogEvent {
 		return iterationNumber;
 	}
 
+    public int getDataBeBackupDay() {
+		return dataBeBackupDay;
+	}
+    
 	@Override
     public String toString() {
         String toReturn = Helper.convertToTimestamp(time);
@@ -204,6 +230,10 @@ public class LogEvent {
 
         if (!"".equals(backupName)) {
             toReturn = toReturn.replace(BACKUP_SUB, backupName);
+        }
+        
+        if (!"".equals(restoreName)) {
+            toReturn = toReturn.replace(RESTORE_SUB, restoreName);
         }
 
         if (!"".equals(storageName)) {
@@ -240,6 +270,10 @@ public class LogEvent {
         
         if (!"".equals(String.valueOf(iterationNumber))) {
             toReturn = toReturn.replace(ITERATION_NUMBER_SUB, String.valueOf(iterationNumber));
+        }
+        
+        if (!"".equals(String.valueOf(dataBeBackupDay))) {
+            toReturn = toReturn.replace(DATA_BE_BACKUP_DAY_SUB, String.valueOf(dataBeBackupDay));
         }
 
         return toReturn;

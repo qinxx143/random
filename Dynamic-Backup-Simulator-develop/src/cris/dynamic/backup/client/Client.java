@@ -9,6 +9,7 @@ public class Client {
     private double                  throughput;
     private double                  throughputVariance;
     private final ArrayList<String> backups;
+    private final ArrayList<String> restores;
 
     public Client(final String name, final double throughput, final double throughputVariance) {
         this.name = name;
@@ -18,6 +19,7 @@ public class Client {
         }
         this.throughputVariance = throughputVariance;
         backups = new ArrayList<String>();
+        restores = new ArrayList<String>();
     }
 
     /**
@@ -77,5 +79,13 @@ public class Client {
     public void setThroughputVariance(double throughputVariance) {
         this.throughputVariance = throughputVariance;
     }
+    
+	public void addRestore(String restoreName) {
+		this.restores.add(restoreName);
+	}
+
+	public ArrayList<String> getActiveRestores() {
+		return this.restores;
+	}
 
 }

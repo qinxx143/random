@@ -178,7 +178,7 @@ public class BackupSystem {
         	    entry.getValue().setBackupType(tempBackupType);
         	    //set up full backup frequency by scheduler
         		if (entry.getValue().getBackupType() == "Differential") {
-        			int tempFullBackupFrequency = scheduler.computeFullBackupFrequency(3); //TODO using mathematical model to compute the full backup frequency
+        			int tempFullBackupFrequency = scheduler.computeFullBackupFrequency(5); //TODO using mathematical model to compute the full backup frequency
         			entry.getValue().setFullBackupFrequency(tempFullBackupFrequency);
         		}
         	    //set up backup frequency
@@ -425,6 +425,8 @@ public class BackupSystem {
                     snapshotChain.setIterationNumber(iterationNumber);
                     snapshotChain.setStorageName(backupEntry.getValue().getStorageName());
                     snapshotChain.setDataSize(backupEntry.getValue().getDataSize());
+                    snapshotChain.setClientName(backupEntry.getValue().getClientName());
+                    snapshotChain.setServerName(backupEntry.getValue().getServerName());
                     backupToSnapshotMap.put(backupEntry.getKey(), snapshotChain);
                     snapshotChainMap.put(String.valueOf(iterationNumber), backupToSnapshotMap);
                     

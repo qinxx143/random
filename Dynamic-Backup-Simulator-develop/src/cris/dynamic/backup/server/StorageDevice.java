@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Random;
 
 import cris.dynamic.backup.Backup;
+import cris.dynamic.backup.Restore;
 
 public class StorageDevice implements Comparable<StorageDevice> {
 
@@ -18,6 +19,8 @@ public class StorageDevice implements Comparable<StorageDevice> {
     private double                  smallestActiveBackupData = -1;
     private final ArrayList<String> activeBackups;
     
+    private double  totalActiveRestoreData    = 0;
+    private double  smallestActiveRestoreData = -1;
     private final ArrayList<String> activeRestores;
 
     public StorageDevice(final String name, final String serverName, final double throughput, final double throughputVariance,
@@ -246,13 +249,61 @@ public class StorageDevice implements Comparable<StorageDevice> {
             return 0;
         }
     }
+    
+	public void addActiveRestore(Restore restore) {
+		activeRestores.add(restore.getRestoreName());
+        if (restore.getDataSize() < smallestActiveRestoreData) {
+        	smallestActiveRestoreData = restore.getDataSize();
+        }
+	}
 
     public ArrayList<String> getActiveRestores() {
 		return activeRestores;
 	}
 
+	public double getTotalActiveRestoreData() {
+		return totalActiveRestoreData;
+	}
+
+	public void setTotalActiveRestoreData(double totalActiveRestoreData) {
+		this.totalActiveRestoreData = totalActiveRestoreData;
+	}
+
+	public double getSmallestActiveRestoreData() {
+		return smallestActiveRestoreData;
+	}
+
+	public void setSmallestActiveRestoreData(double smallestActiveRestoreData) {
+		this.smallestActiveRestoreData = smallestActiveRestoreData;
+	}
+
 	private boolean isBetween(double x, double lower, double upper) {
         return lower <= x && x <= upper;
     }
+	
+	public boolean removeRestores(String restoreName) {
+		return activeRestores.remove(restoreName);
+	}
+	
+	public void updateTotalActiveRestore(Map<String, Restore> restoreMap) {
+		double sum = 0;
+        for (final String activeRestore : activeRestores) {
+        	Restore restore = restoreMap.get(activeRestore);
+            sum += restore.getDataLeft();
+        }
+        totalActiveRestoreData = sum;
+	}
+	public void updateSmallestRestore(Map<String, Restore> restoreMap) {
+		if (restoreMap.isEmpty()) {
+            smallestActiveRestoreData = -1;
+        } else {
+            for (final String activeRestore : activeRestores) {
+            	Restore restore = restoreMap.get(activeRestore);
+                if (restore.getDataLeft() < smallestActiveRestoreData || smallestActiveRestoreData == -1) {
+                	smallestActiveRestoreData = restoreMap.get(activeRestore).getDataLeft();
+                }
+            }
+        }
+	}
 
 }

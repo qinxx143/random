@@ -7,11 +7,13 @@ public class MediaServer {
     private final String            name;
     private final ArrayList<String> storageDevices;
     private final ArrayList<String> backups;
-
+    private final ArrayList<String> restores;
+    
     public MediaServer(final String name) {
         this.name = name;
         storageDevices = new ArrayList<String>();
         backups = new ArrayList<String>();
+        restores = new ArrayList<String>();
     }
 
     public void addBackup(final String backupName) {
@@ -39,5 +41,12 @@ public class MediaServer {
         }
 
     }
+    
+	public void addActiveRestore(String restoreName) {
+		restores.add(restoreName);
+	}
+	public boolean removeRestore(String restoreName){
+		return restores.remove(restoreName);
+	}
 
 }

@@ -11,12 +11,12 @@ import org.apache.commons.math3.distribution.ParetoDistribution;
 import cris.dynamic.backup.system.Helper;
 
 public class SystemRandomizer {
-    private static String      outputFileName             = "system_3";
+    private static String      outputFileName             = "system_4";
 
     //Settings
-    private static int         numServers                 = 2;
+    private static int         numServers                 = 1;
 
-    private static int         numStorageUnits            = 4;
+    private static int         numStorageUnits            = 1;
 
     private static double      stuMeanThroughput          = 100;
 

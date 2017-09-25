@@ -9,7 +9,7 @@ public class Restore {
 	private String  restoreName;
 	private String  requestTime; 
 	private int     requestDay;
-	private int     dataDay;
+	private int     dataBeBackupDay;
 	
     private double  dataSize;
     private double  dataLeft;
@@ -17,8 +17,6 @@ public class Restore {
 	private String  storageName;//存储器
     private String  serverName;//服务器
     private String  snapshotChainName;//快照的名字
-    private String 	DFOAName;
-    private String 	DFOBName;
     
     private boolean      active    = false;
     private boolean      completed = false;
@@ -113,7 +111,7 @@ public class Restore {
         return false;
 	}
 	 public long getDuration() {
-        return (endTime - startTime) + this.penalty;
+        return (endTime - startTime);
     }
 	public double getOverallThroughput() {
 		if (endTime == 0) {
@@ -135,29 +133,20 @@ public class Restore {
 	public void setRequestDay(int requestDay) {
 		this.requestDay = requestDay;
 	}
-	public String getDFOAName() {
-		return DFOAName;
+
+	public int getDataBeBackupDay() {
+		return dataBeBackupDay;
 	}
-	public void setDFOAName(String dFOAName) {
-		DFOAName = dFOAName;
+	public void setDataBeBackupDay(int dataBeBackupDay) {
+		this.dataBeBackupDay = dataBeBackupDay;
 	}
-	public String getDFOBName() {
-		return DFOBName;
-	}
-	public void setDFOBName(String dFOBName) {
-		DFOBName = dFOBName;
-	}
+
 	public void addPenalty(int penalty) {
 		this.penalty = penalty * 1000;
 	}
 	public long getPenalty(){
 		return this.penalty;
 	}
-	public int getDataDay() {
-		return dataDay;
-	}
-	public void setDataDay(int dataDay) {
-		this.dataDay = dataDay;
-	}
+
 
 }
