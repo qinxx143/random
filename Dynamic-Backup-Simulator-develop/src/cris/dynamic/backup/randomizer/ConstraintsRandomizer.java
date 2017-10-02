@@ -16,7 +16,7 @@ import org.apache.commons.io.FilenameUtils;
 
 public class ConstraintsRandomizer {
 
-    private static String                               inputFileName               = "system_4.system";
+    private static String                               inputFileName               = "system_5.system";
 
     private static PrintWriter                          writer;
 
@@ -24,7 +24,7 @@ public class ConstraintsRandomizer {
      * Storage Randomization
      */
     private static boolean                              randomizeStorage            = true;
-    private static int                                  numRandomStorageConstraints = 1;
+    private static int                                  numRandomStorageConstraints = 2;
 
     private static boolean                              randomizeServer             = false;
     private static boolean                              randomizeStartTime          = false;

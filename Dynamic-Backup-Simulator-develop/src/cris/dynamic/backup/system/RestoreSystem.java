@@ -44,6 +44,7 @@ public class RestoreSystem {
     private Map<String,Integer>			requestRestoreDayMap;//请求还原的天数
     private Map<String, Restore>         restores;
     private static Map<String, Map<String, Restore>> dayTorestores;
+    private HashMap<String, String> durationMap;
     
     //Metrics
     private double	dailyDataRestoreUp = 0;
@@ -55,7 +56,7 @@ public class RestoreSystem {
 	private int iterationNumber = 1;
 	private long	time = 0;
 	
-	//parse input file me
+	//parse input file 
 	private static int restoreRequestDay=0;
 	private static String restoreName="";
 	private static String restoreRequestTime="";
@@ -75,6 +76,7 @@ public class RestoreSystem {
 		this.unutilizedStorageMap = new HashMap<String, Long>();
 		this.completedRestoresMap = new HashMap<String, Restore>();
 		this.dayTorestores = new HashMap<String,Map<String, Restore>>();
+		this.durationMap = new HashMap<String,String>();
 		parseInputFiles(systemRestoreFile);
 		
 	}
@@ -140,7 +142,7 @@ public class RestoreSystem {
         	if (null != restoresToStart) {
         		for (final Map.Entry<String, Restore> restoresAssignment : restoresToStart.entrySet()) {
         			String name =restoresAssignment.getKey();
-            		System.out.println("get new "+ name + "_" + restoresAssignment.getValue().getDataBeBackupDay()+" from " + restoresAssignment.getValue().getStorageName());
+            		System.out.print("get new "+ name + "_" + restoresAssignment.getValue().getDataBeBackupDay()+" from " + restoresAssignment.getValue().getStorageName());
         		}    		
         	}
         	for (final Map.Entry<String, Restore> restoresAssignment : restoresToStart.entrySet()) {
@@ -161,9 +163,7 @@ public class RestoreSystem {
 				
 				StorageDevice storageDevice = scheduler.getStorageDevices().get(restore.getStorageName());
 				storageDevice.addActiveRestore(restore);
-				if (time ==3600*1000 && iterationNumber==2){
-					System.out.println(storageDevice.getName());
-				}
+				System.out.println(" "+ storageDevice.getActiveRestores());
 				
 				Client client = scheduler.getClients().get(restore.getClientName());
 				client.addRestore(restoreName);
@@ -251,7 +251,7 @@ public class RestoreSystem {
             if (restore.isActive()) {
                 //It is active
                 final boolean completed = restore.step(timeStep, throughputMap.get(restoreName));
-                if (completed) {
+                if (completed) {           
                 	System.out.println(restoreName+"_"+ restore.getDataBeBackupDay()+ " completed");
                 	String requestName = restore.getRestoreName();
                     //if that step completes the backup
@@ -266,7 +266,19 @@ public class RestoreSystem {
 					//计算non-last...记录已还原的天数
 					int restoreDay = restore.getRequestDay();
 					this.requestRestoreDayMap.put(requestName, restoreDay);
-
+					
+                     if(null == durationMap.get(restore.getRestoreName())) {
+                    	 	durationMap.put(restore.getRestoreName(), Helper.convertToTimestamp(restore.getDuration()));
+                    	 	//System.out.println(restore.getRestoreName() + " " + Helper.convertToTimestamp(restore.getDuration()));
+                     }else {
+                    	 	long duration1 = restore.getDuration();
+                    	 	long duration2 = Helper.converToTimeSeconds(durationMap.get(restore.getRestoreName()))*1000;
+                    	 	String duration2_2 = durationMap.get(restore.getRestoreName());
+                    	 	long duration  = duration1 + duration2;
+                    	 	durationMap.replace(restore.getRestoreName(), Helper.convertToTimestamp(duration));
+                    	 	System.out.println(restore.getRestoreName() + " " + duration1 + " + " + duration2 +" = "+ duration);
+                     }
+				   				    
                     printLog(writer, new LogBuilder(Events.RESTORE_COMPLETED, time + timeStep)
                     .backupDay(restore.getDataBeBackupDay())
                     .restore(restore.getRestoreName())
@@ -358,14 +370,14 @@ public class RestoreSystem {
 		
 	}
 	public void writeCompletionStatistics() {
-		printLog(writer, new LogBuilder(Events.ALL_RESTORE_COMPLETED, time)
-			.dataSize(dailyDataRestoreUp)
-			.duration(dailyTotalTime)
-			.build());
-//		printLog(DynamicBackupSimulator.allWriter, new LogBuilder(Events.ALL_RESTORE_COMPLETED, time)
-//		.dataSize(dailyDataRestoreUp)
-//		.duration(dailyTotalTime)
-//		.build());
+//		printLog(writer, new LogBuilder(Events.ALL_RESTORE_COMPLETED, time)
+//			.dataSize(dailyDataRestoreUp)
+//			.duration(dailyTotalTime)
+//			.build());
+		writer.println("***** Statistics *****");
+        for (Map.Entry<String, String> durationEntry : durationMap.entrySet()) {
+        		writer.println("Total Restore Time for " + durationEntry.getKey() + ": " + durationEntry.getValue());
+        }
 	}
 	public int getCompletedBackups() {
 		return numCompletedRestores;

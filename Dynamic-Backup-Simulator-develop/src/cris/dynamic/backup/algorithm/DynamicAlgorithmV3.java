@@ -17,6 +17,7 @@ import org.apache.commons.math3.distribution.TriangularDistribution;
 import org.apache.commons.math3.util.ResizableDoubleArray;
 
 import com.sun.org.apache.bcel.internal.generic.NEW;
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.LocatorEx.Snapshot;
 import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 import cris.dynamic.backup.Backup;
@@ -41,9 +42,10 @@ public class DynamicAlgorithmV3 extends Scheduler {
     private final Map<String, Map<String, ArrayList<HistoricalDataPoint>>> storageAssociationThroughputs;    //Map<BackupName, Map<StorageName, ArrayList<Throughputs>
     private final Map<String, ArrayList<HistoricalDataPoint>>              backupHistoricalThroughputs;      //<String(backupName), ArrayList<Throughputs>(throughput values for that backup)>
     private final Map<String, Restore>                                     unScheduledRestoresMap; 
-    private ArrayList<Restore>                                       pieceRestoresList;
+    private ArrayList<Restore>                                             pieceRestoresList;
+    private ArrayList<Restore>                                              unScheduledRestoresList;
     private final Map<String, ArrayList<Restore>>                          pieceRestoresListMap; // Restore Name --> the pieceRestoreList for the restore Name    
-    private Map<String, ArrayList<Restore>>                          readyPieceRestoresMap;
+    private Map<String, ArrayList<Restore>>                                readyPieceRestoresMap;
     public DynamicAlgorithmV3() {
         day = 0;
         storageAssociationThroughputs = new HashMap<String, Map<String, ArrayList<HistoricalDataPoint>>>();
@@ -52,6 +54,7 @@ public class DynamicAlgorithmV3 extends Scheduler {
         pieceRestoresList = new ArrayList<Restore>();
         pieceRestoresListMap = new HashMap<String, ArrayList<Restore>>();
         readyPieceRestoresMap = new HashMap<String, ArrayList<Restore>>();
+        unScheduledRestoresList = new ArrayList<Restore>();
     }
 
     @Override
@@ -340,7 +343,12 @@ public class DynamicAlgorithmV3 extends Scheduler {
     	    //find the storage device available (<5 active restores)
 		Map<String, StorageDevice> storageCopy = new HashMap<String, StorageDevice>();
 		storageCopy.putAll(super.getStorageDevices());
-		storageCopy = removeActiveRestoreStorage(storageCopy, maxBackupPerSTU);
+		storageCopy = removeActiveRestoreStorage(storageCopy, maxRestorePerSTU);
+		
+		//read all the restore request of the current day
+	    Map<String, Restore> restoresCopy = new HashMap<String, Restore>();
+	    Map<String, Restore> restoresAssignment = new HashMap<String,Restore>();
+	    restoresCopy = RestoreSystem.getDayToRestores().get(String.valueOf(day+1)); 
     	
     	    // check if there is scheduled but partial uncompleted restore
     	    Map<String, Restore> returnRestore = new HashMap<String,Restore>();
@@ -387,19 +395,24 @@ public class DynamicAlgorithmV3 extends Scheduler {
     		String selectedRestoreName = "";
     		Restore selectedRestoreValue = new Restore();
     		
-    		if(!unScheduledRestoresMap.isEmpty()) {
-    		    selectedRestoreName = getRandomRestore(unScheduledRestoresMap);			
-        	    selectedRestoreValue = unScheduledRestoresMap.get(selectedRestoreName);
-        	    selectedRestore.put(selectedRestoreName,selectedRestoreValue);
-        	    unScheduledRestoresMap.remove(selectedRestoreName);
-    		}else {//if there is no unscheduled requested restore
+    		boolean goToRequestTable = true;
+    		if(!unScheduledRestoresList.isEmpty()) {
     			
-    			//read all the restore request of the current day
-        	    Map<String, Restore> restoresCopy = new HashMap<String, Restore>();
-        	    Map<String, Restore> restoresAssignment = new HashMap<String,Restore>();
-        	    	//restoresCopy.putAll(RestoreSystem.getDayToRestores().get(String.valueOf(day+1))); 
-        	    restoresCopy = RestoreSystem.getDayToRestores().get(String.valueOf(day+1)); 
-   	    
+    			for (int i = 0 ; i < unScheduledRestoresList.size() ; i++) {   				
+    				Restore restore = unScheduledRestoresList.get(i);
+    				if (storageCopy.containsKey(restore.getStorageName())) {
+    					selectedRestoreName = restore.getRestoreName();			
+    	        	        selectedRestoreValue = restore;
+    	        	        selectedRestore.put(selectedRestoreName,selectedRestoreValue);
+    	        	        unScheduledRestoresList.remove(0);
+    	        	        goToRequestTable = false;
+    	        	        break;
+    				}
+    			}
+    		    
+    		}
+    		
+    		if (goToRequestTable){//if there is no unscheduled requested restore
         	    //find the restore request matched with the current time
         	    for (final Map.Entry<String, Restore> restoreCopyEntry : restoresCopy.entrySet()) {
         	    	    long associatedRequestTime = (long) Helper.converToTimeSeconds(restoreCopyEntry.getValue().getRequestTime());
@@ -409,9 +422,9 @@ public class DynamicAlgorithmV3 extends Scheduler {
         	    }
         	    
         	    if (restoresAssignment.isEmpty()) {
-        	    	    return returnRestore;
-        	    	
+        	    	    return returnRestore;       	    	
         	    }
+        	    
         	    //remove the active and completed restore 
         	    restoresAssignment = removeActiveAndCompletedRestore(restoresAssignment);
         	    
@@ -456,11 +469,17 @@ public class DynamicAlgorithmV3 extends Scheduler {
 				
 		}
 		
-		returnRestore.put(selectedRestoreName, pieceRestoresList.get(0)) ;
-		pieceRestoresList.remove(0);
-		if (!pieceRestoresList.isEmpty()) {
-			pieceRestoresListMap.put(selectedRestoreName,pieceRestoresList);	
+		if (storageCopy.containsKey(pieceRestoresList.get(0).getStorageName())) {
+			returnRestore.put(selectedRestoreName, pieceRestoresList.get(0)) ;
+			pieceRestoresList.remove(0);
+			if (!pieceRestoresList.isEmpty()) {
+				pieceRestoresListMap.put(selectedRestoreName,pieceRestoresList);	
+			}
+		}else {
+			unScheduledRestoresList.add(pieceRestoresList.get(0));
+			
 		}
+
 			
     		return returnRestore;
     	
@@ -508,4 +527,5 @@ public class DynamicAlgorithmV3 extends Scheduler {
     	}
     	return toReturn;
     }
+    
 }

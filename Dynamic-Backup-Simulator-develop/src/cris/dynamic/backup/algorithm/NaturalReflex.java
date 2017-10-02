@@ -5,8 +5,8 @@ public class NaturalReflex {
 	
 	
 	public int computeFrequency(int RPO) {
-		 //backupFrequency = RPO;
-		backupFrequency = 1;
+		 backupFrequency = RPO;
+		//backupFrequency = 1;
 		 return backupFrequency; 
 	}
 
