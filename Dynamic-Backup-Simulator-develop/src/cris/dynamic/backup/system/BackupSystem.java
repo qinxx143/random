@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import cris.dynamic.backup.Backup;
@@ -22,6 +23,7 @@ import cris.dynamic.backup.infrastructure.Constraints;
 import cris.dynamic.backup.infrastructure.Events;
 import cris.dynamic.backup.infrastructure.LogEvent;
 import cris.dynamic.backup.infrastructure.LogEvent.LogBuilder;
+import cris.dynamic.backup.infrastructure.NaturalReflexHistorical;
 import cris.dynamic.backup.server.MediaServer;
 import cris.dynamic.backup.server.StorageDevice;
 import sun.print.PrinterJobWrapper;
@@ -36,7 +38,8 @@ public class BackupSystem {
     private Map<String,Backup>               unBackupsMap;
     private Map<String, SnapshotChain>       backupToSnapshotMap;
     private static Map<String, Map<String, SnapshotChain>>       snapshotChainMap = new HashMap<String,Map<String, SnapshotChain>>(); //day to SnapshotChain
-
+    private Map<String, Integer>             fullBackupFrequencyMap;
+    private static Map<String, NaturalReflexHistorical> NaturalMap; 
     private final Map<String, MediaServer>   servers;
     private final Map<String, Client>        clients;
     private final Map<String, StorageDevice> storageDevices;
@@ -51,6 +54,7 @@ public class BackupSystem {
     private int                              numCompletedBackups = 0;
     private int                              numTotalBackups;
     private int                              iterationNumber     = 1;
+    private  static Map<String, Integer>     estimatedRestoreTime ;
     private final PrintWriter                writer;
     private final PrintWriter                snapshotChainsWriter;
 
@@ -73,6 +77,9 @@ public class BackupSystem {
         clients = new HashMap<String, Client>();
         storageDevices = new HashMap<String, StorageDevice>();
         
+        NaturalMap =new HashMap<String,NaturalReflexHistorical>();
+        estimatedRestoreTime = new HashMap<String,Integer>();
+        fullBackupFrequencyMap = new HashMap<String,Integer>();
         wholeBackupsMap = new HashMap<String,Backup>();
         unBackupsMap = new HashMap<String,Backup>();
         backupToSnapshotMap = new HashMap<String,SnapshotChain>();
@@ -107,11 +114,11 @@ public class BackupSystem {
         return numActiveBackups;
     }
 
-    public Backup getBackup(final String backupName) {
+    public  Backup getBackup(final String backupName) {
         return backups.get(backupName);
     }
 
-    public Map<String, Backup> getBackups() {
+    public  Map<String, Backup> getBackups() {
         return backups;
     }
 
@@ -161,7 +168,10 @@ public class BackupSystem {
 
 
     public void nextIteration() {
-        
+        //test NR table
+    		//System.out.println(NaturalMap.get("backup2").getIncreSize());
+      	//System.out.println(NaturalMap.get("backup2").getfullSize());
+    		
         if(iterationNumber ==1) {
           	backups = completedBackupsMap;
         		wholeBackupsMap.putAll(backups);
@@ -171,16 +181,35 @@ public class BackupSystem {
         
         iterationNumber++;
         backupToSnapshotMap = new HashMap<String,SnapshotChain>();
-        NaturalReflex naturalReflex = new NaturalReflex();
+        
         for (final Map.Entry<String, Backup> entry : wholeBackupsMap.entrySet()) {
+        		Backup value = entry.getValue();
+        	    NaturalReflex naturalReflex = new NaturalReflex(entry.getValue(), clients.get(entry.getValue().getClientName()),storageDevices.get(entry.getValue().getStorageName()));
         	    //set up backup Type by scheduler
         	    String tempBackupType = scheduler.computeBackupTpye("Differential");
         	    entry.getValue().setBackupType(tempBackupType);
-        	    //set up full backup frequency by scheduler
+        	    
+        	    //set up full backup frequency by NaturalReflex;       	    
         		if (entry.getValue().getBackupType() == "Differential") {
-        			int tempFullBackupFrequency = scheduler.computeFullBackupFrequency(5); //TODO using mathematical model to compute the full backup frequency
-        			entry.getValue().setFullBackupFrequency(tempFullBackupFrequency);
+        			if(iterationNumber >=2 && entry.getValue().getDailyBackupType()=="full" && entry.getValue().getProgressDay() == iterationNumber-1) {
+        				Random random = new Random();
+        				int number = random.nextInt(15)+1;
+        				//int tempFullBackupFrequency = scheduler.computeFullBackupFrequency(7);
+        				//int tempFullBackupFrequency = naturalReflex.computeFullBackupFrequency();
+        				//int tempFullBackupFrequency = naturalReflex.dynamicFullBackupFequency();
+        				int tempFullBackupFrequency = naturalReflex.dynamicOptimalFullBackupFequency(0.9);
+        				System.out.println(entry.getKey()+" "+ tempFullBackupFrequency);
+        				int time = naturalReflex.getEstimiatedRestoreTime();  
+        				estimatedRestoreTime.put(entry.getKey(), time);
+        				fullBackupFrequencyMap.put(entry.getKey(), tempFullBackupFrequency);
+        				entry.getValue().setFullBackupFrequency(tempFullBackupFrequency);
+        				
+        			}else {
+        				entry.getValue().setFullBackupFrequency(fullBackupFrequencyMap.get(entry.getKey()));
+        			}
+        			
         		}
+        		//System.out.println(iterationNumber + " "+ entry.getKey()+" FBF: "+ entry.getValue().getFullBackupFrequency() );
         	    //set up backup frequency
             entry.getValue().setBackupFrequency(naturalReflex.computeFrequency(entry.getValue().getRPO()));
             //System.out.println(entry.getValue().getBackupFrequency());
@@ -193,7 +222,7 @@ public class BackupSystem {
         wholeBackupsMap = new HashMap<String,Backup>();
         wholeBackupsMap.putAll(backups);
         wholeBackupsMap.putAll(unBackupsMap);
-
+ 
         //TODO logging?
         writer.println("\r\nIteration " + iterationNumber + "\r\n");
         snapshotChainsWriter.println("\n");
@@ -207,12 +236,12 @@ public class BackupSystem {
         //get the backupTpye and reset the backup based on the full backup frequency
         for (final Map.Entry<String, Backup> entry : backups.entrySet()) {
         		if (entry.getValue().getBackupType() == "Differential") {
-        			if((iterationNumber - 1) % entry.getValue().getFullBackupFrequency() !=0 || (iterationNumber -1) < entry.getValue().getFullBackupFrequency()) {
-        				entry.getValue().resetBackup(.05, true);
+        			if((iterationNumber - 1) % (entry.getValue().getFullBackupFrequency()*entry.getValue().getBackupFrequency() )!=0 || (iterationNumber -1) < entry.getValue().getFullBackupFrequency()) {
+        				entry.getValue().resetBackup(0, true);
         				entry.getValue().setDailyBackupType("incre");
         				//System.out.println(iterationNumber + " "+ "incre");
         			}else {
-        				entry.getValue().resetBackup(.05, false);
+        				entry.getValue().resetBackup(0.05, false);
         				//System.out.println(iterationNumber + " "+ "full");
         				entry.getValue().setDailyBackupType("full");
         			}
@@ -405,6 +434,7 @@ public class BackupSystem {
                     backupEntry.getValue().setActive(false);
                     backupEntry.getValue().setEndTime(time + timeStep);
                     backupEntry.getValue().setCompleted(true);
+                    backupEntry.getValue().setProgressDay(iterationNumber);
                     numActiveBackups--;
                     numCompletedBackups++;
                     totalDataBackedUp += (long) backupEntry.getValue().getDataSize();
@@ -413,6 +443,9 @@ public class BackupSystem {
                     //give scheduler historical data
                     scheduler.notateHistoricalData(backupEntry.getValue());
 
+                    //give natural reflex data 
+                    //notateNaturelReflexTableData(backupEntry.getValue());
+                    
                     if (backupEntry.getValue().missedBackupWindow(time + timeStep)) {
                         ++missedWindows;
                     }
@@ -427,8 +460,23 @@ public class BackupSystem {
                     snapshotChain.setDataSize(backupEntry.getValue().getDataSize());
                     snapshotChain.setClientName(backupEntry.getValue().getClientName());
                     snapshotChain.setServerName(backupEntry.getValue().getServerName());
+                    snapshotChain.setRPO(backupEntry.getValue().getRPO());
+                    snapshotChain.setRTO(backupEntry.getValue().getRTO());
                     backupToSnapshotMap.put(backupEntry.getKey(), snapshotChain);
                     snapshotChainMap.put(String.valueOf(iterationNumber), backupToSnapshotMap);
+                    
+                    //record the completed backup historical data on the naturalreflex historical 
+                    if(null == NaturalMap.get(backupEntry.getKey())) {
+                    	    NaturalReflexHistorical historicalvalues = new NaturalReflexHistorical(backupEntry.getValue());
+                        historicalvalues.notateNaturalReflexHistorical();                 
+                        NaturalMap.put(backupEntry.getKey(), historicalvalues);
+                    } else {
+                     	NaturalMap.get(backupEntry.getKey()).updateNRHistorical(backupEntry.getValue());
+                    	    NaturalMap.get(backupEntry.getKey()).notateNaturalReflexHistorical();
+                    }
+                    
+                    
+                    
                     
                     printLog(snapshotChainsWriter, new LogBuilder(Events.SNAPSHOTCHAINS, time + timeStep)
                     .backup(snapshotChain.getBackupName())
@@ -643,5 +691,15 @@ public class BackupSystem {
     public static Map<String, Map<String, SnapshotChain>> getSnapshotChainMap(){
     		return snapshotChainMap;
     }
+    
+    public static Map<String, Integer> getEstimatedReatoreTime(){
+    		return estimatedRestoreTime;
+    }
+    
+    public static Map<String, NaturalReflexHistorical> getNaturalMap(){
+    		return NaturalMap;
+    }
+    
+
 
 }

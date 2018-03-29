@@ -8,6 +8,8 @@ public class SnapshotChain {
 	private String clientName;
 	private String serverName;
 	private String storageName;
+	private String RTO;
+	private int    RPO;
 	private double dataSize;
 	private int iterationNumber;
 	
@@ -73,6 +75,22 @@ public class SnapshotChain {
 
 	public void setStorageName(String storageName) {
 		this.storageName = storageName;
+	}
+
+	public String getRTO() {
+		return RTO;
+	}
+
+	public void setRTO(String rTO) {
+		RTO = rTO;
+	}
+
+	public int getRPO() {
+		return RPO;
+	}
+
+	public void setRPO(int rPO) {
+		RPO = rPO;
 	} 
 	
 	

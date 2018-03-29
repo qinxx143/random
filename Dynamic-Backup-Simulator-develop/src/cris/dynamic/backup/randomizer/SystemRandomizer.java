@@ -11,20 +11,20 @@ import org.apache.commons.math3.distribution.ParetoDistribution;
 import cris.dynamic.backup.system.Helper;
 
 public class SystemRandomizer {
-    private static String      outputFileName             = "system_5";
+    private static String      outputFileName             = "testSystem2018";
 
     //Settings
-    private static int         numServers                 = 2;
+    private static int         numServers                 = 3;
 
-    private static int         numStorageUnits            = 3;
+    private static int         numStorageUnits            = 6;
 
-    private static double      stuMeanThroughput          = 100;
+    private static double      stuMeanThroughput          = 150;
 
     private static double      stuThroughputDeviation     = 20;
 
     private static int         stuMaxData                 = 1000 * 10;
 
-    public static int         numClients                 = 10;
+    public static int         numClients                 = 100;
 
     private static double      clientsMeanThroughput      = 75;
 
@@ -87,7 +87,7 @@ public class SystemRandomizer {
         }
 
         writer.println("#Backups");
-        writer.println("#backup(*name*, *client*, *data_size(MB)*，criticality, *RTO*(s), *RPO(day)*)");
+        writer.println("#backup(*name*, *client*, *data_size(MB)*criticality, *RTO*(s), *RPO(day)*)");
 
         for (int i = 0; i < backupsPerClient; i++) { //for each backup per client
             int tempClientNum = 0;

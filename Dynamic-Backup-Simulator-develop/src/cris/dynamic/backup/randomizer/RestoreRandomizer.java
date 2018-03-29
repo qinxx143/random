@@ -11,11 +11,11 @@ import sun.management.VMOptionCompositeData;
 
 public class RestoreRandomizer {
 	
-	private static final String	outputFileName = "restore";
+	private static final String	outputFileName = "restore2018";
 	
-	private static final  int    restoreAtomic = 3600; 
+	//private static final  int    restoreAtomic = 3600; 
 	
-	private static final double  faultRate= 0.3;
+	private static final double  faultRate= 0.05;
 	
 	private static PrintWriter restoreWriter;
 	
@@ -46,8 +46,10 @@ public class RestoreRandomizer {
 	        for (int j = 0; j < SystemRandomizer.numClients; j++) {
 	        	    restore = new Restore();
 	        		restore.setRestoreName("restore"+j);
-	        		int rand = random.nextInt(12);
-	        		restore.setRequestTime(rand * restoreAtomic);
+	        		int hour = random.nextInt(12);
+	        		int min  = random.nextInt(60);
+                int sec  =  random.nextInt(60);
+	        		restore.setRequestTime(hour * 3600 + min * 60 + sec);	        		
 	        		double rand2 = random.nextDouble();
 	        		restoreList.add(restore);
 	        		if (rand2 <= faultRate) {

@@ -23,7 +23,7 @@ public class DynamicBackupSimulator {
 
     private static final int    stepSize             = 100;                                       //milliseconds per step
 
-    public static final int    iterations           = 5;
+    public static final int    iterations           = 120;
 
     private static final String scheduler            = "DynamicAlgorithmV3";   //             = new DynamicAlgorithmV3();
 
@@ -31,9 +31,9 @@ public class DynamicBackupSimulator {
 
     private static final long   overallBackupWindow  = -1;                                        //overall backup window size in milliseconds
 
-    private static final String systemConfigFile     = "system_5.system";
-    private static final String systemConstraintFile = "system_5_1.constraint";
-    private static final String systemRestoreFile    = "restore.system";
+    private static final String systemConfigFile     = "testSystem2018.system";
+    private static final String systemConstraintFile = "testSystem2018_1.constraint";
+    private static final String systemRestoreFile    = "restore2018.system";
     private static final String dataLogFile          = "./logFile.csv";
 
     public static PrintWriter allWriter;

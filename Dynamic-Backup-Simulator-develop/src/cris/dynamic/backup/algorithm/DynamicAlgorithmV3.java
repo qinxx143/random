@@ -41,11 +41,12 @@ public class DynamicAlgorithmV3 extends Scheduler {
 
     private final Map<String, Map<String, ArrayList<HistoricalDataPoint>>> storageAssociationThroughputs;    //Map<BackupName, Map<StorageName, ArrayList<Throughputs>
     private final Map<String, ArrayList<HistoricalDataPoint>>              backupHistoricalThroughputs;      //<String(backupName), ArrayList<Throughputs>(throughput values for that backup)>
-    private final Map<String, Restore>                                     unScheduledRestoresMap; 
+    private Map<String, Restore>                                           unScheduledRestoresMap; 
     private ArrayList<Restore>                                             pieceRestoresList;
-    private ArrayList<Restore>                                              unScheduledRestoresList;
-    private final Map<String, ArrayList<Restore>>                          pieceRestoresListMap; // Restore Name --> the pieceRestoreList for the restore Name    
+    private ArrayList<Restore>                                             unScheduledRestoresList;
+    private Map<String, ArrayList<Restore>>                                pieceRestoresListMap; // Restore Name --> the pieceRestoreList for the restore Name    
     private Map<String, ArrayList<Restore>>                                readyPieceRestoresMap;
+    
     public DynamicAlgorithmV3() {
         day = 0;
         storageAssociationThroughputs = new HashMap<String, Map<String, ArrayList<HistoricalDataPoint>>>();
@@ -208,6 +209,11 @@ public class DynamicAlgorithmV3 extends Scheduler {
 
     @Override
     public void incrementDay() {
+        unScheduledRestoresMap = new HashMap<String,Restore>();
+        pieceRestoresList = new ArrayList<Restore>();
+        pieceRestoresListMap = new HashMap<String, ArrayList<Restore>>();
+        readyPieceRestoresMap = new HashMap<String, ArrayList<Restore>>();
+        unScheduledRestoresList = new ArrayList<Restore>();
         ++day;
     }
 
@@ -339,7 +345,10 @@ public class DynamicAlgorithmV3 extends Scheduler {
     
     //restore 
     public Map<String, Restore> getNewRestores(long currentTime) {
-    	
+    	    //backup information 
+        Map<String, Backup> backups = new HashMap<String, Backup>();
+        backups.putAll(super.getBackups());
+        
     	    //find the storage device available (<5 active restores)
 		Map<String, StorageDevice> storageCopy = new HashMap<String, StorageDevice>();
 		storageCopy.putAll(super.getStorageDevices());
@@ -451,11 +460,13 @@ public class DynamicAlgorithmV3 extends Scheduler {
 			if(null != snapshotChainMap.get(temDay)) {
 				
 				for (final Map.Entry<String, SnapshotChain> entry : snapshotChainMap.get(temDay).entrySet()) {
-					if (entry.getValue().getBackupName().contains(associatedBackupName)) {
+					if (entry.getValue().getBackupName().equals(associatedBackupName) ) {
 						Restore pieceRestore = new Restore(selectedRestoreName,entry.getValue().getDataSize(),entry.getValue().getStorageName());
 						pieceRestore.setDataBeBackupDay(i);
 						pieceRestore.setClientName(entry.getValue().getClientName());
 						pieceRestore.setServerName(entry.getValue().getServerName());
+						pieceRestore.setRPO(entry.getValue().getRPO());
+						pieceRestore.setRTO(entry.getValue().getRTO());
 						if(entry.getValue().getDailyBackupType() == "full" && i > 1) {
 							pieceRestoresList = new ArrayList<Restore>();							
 						}

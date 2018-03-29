@@ -16,7 +16,7 @@ import org.apache.commons.io.FilenameUtils;
 
 public class ConstraintsRandomizer {
 
-    private static String                               inputFileName               = "system_5.system";
+    private static String                               inputFileName               = "testSystem2018.system";
 
     private static PrintWriter                          writer;
 

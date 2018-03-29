@@ -24,7 +24,7 @@ public class Backup {
     private int          RPO;
     private int          backupFrequency;
     private int          fullBackupFrequency;
-
+    private int          progressDay =0; //used for set up dynamic FullbackupFrequency
     private Constraint   constraint;
 
     //TODO	private double priorityValue = 0;
@@ -73,6 +73,11 @@ public class Backup {
     /**
      * @return the dataSize
      */
+    
+    public double getFullSize() {
+        return fullSize;
+    }
+    
     public double getDataSize() {
         return dataSize;
     }
@@ -161,8 +166,9 @@ public class Backup {
      * This method sets the data size based on an incremental distribution.
      */
     public void makeIncrementalBackup() {
-        final Random rand = new Random();
+        final Random rand = new Random();        
         double percentageFull = 15 + rand.nextGaussian() * 5;
+        //double percentageFull =1;
         if (percentageFull < 5) {
             percentageFull = 5;
         }
@@ -323,6 +329,14 @@ public class Backup {
         return false;
 
     }
+
+	public int getProgressDay() {
+		return progressDay;
+	}
+
+	public void setProgressDay(int progressDay) {
+		this.progressDay = progressDay;
+	}
 
 
 

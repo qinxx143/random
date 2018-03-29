@@ -3,12 +3,15 @@ package cris.dynamic.backup.system;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.PrintWriter;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 import cris.dynamic.backup.Backup;
 import cris.dynamic.backup.DynamicBackupSimulator;
@@ -44,7 +47,9 @@ public class RestoreSystem {
     private Map<String,Integer>			requestRestoreDayMap;//请求还原的天数
     private Map<String, Restore>         restores;
     private static Map<String, Map<String, Restore>> dayTorestores;
-    private HashMap<String, String> durationMap;
+    private HashMap<String, String>      durationMap;
+    private HashMap<String, Long>        initialStartTime;
+    private HashMap<String, ArrayList<String>>   MoSMap;
     
     //Metrics
     private double	dailyDataRestoreUp = 0;
@@ -77,6 +82,8 @@ public class RestoreSystem {
 		this.completedRestoresMap = new HashMap<String, Restore>();
 		this.dayTorestores = new HashMap<String,Map<String, Restore>>();
 		this.durationMap = new HashMap<String,String>();
+		this.initialStartTime = new HashMap<String,Long>();
+		this.MoSMap = new HashMap<String,ArrayList<String>>();
 		parseInputFiles(systemRestoreFile);
 		
 	}
@@ -142,7 +149,7 @@ public class RestoreSystem {
         	if (null != restoresToStart) {
         		for (final Map.Entry<String, Restore> restoresAssignment : restoresToStart.entrySet()) {
         			String name =restoresAssignment.getKey();
-            		System.out.print("get new "+ name + "_" + restoresAssignment.getValue().getDataBeBackupDay()+" from " + restoresAssignment.getValue().getStorageName());
+//            		System.out.print(iterationNumber+": " +"get new "+ name + "_" + restoresAssignment.getValue().getDataBeBackupDay()+" from " + restoresAssignment.getValue().getStorageName());
         		}    		
         	}
         	for (final Map.Entry<String, Restore> restoresAssignment : restoresToStart.entrySet()) {
@@ -157,13 +164,18 @@ public class RestoreSystem {
         		    restore.setActive(true);
 				restore.setStartTime(time);
 				
+				//record the actual start time for the restore
+				if(null == initialStartTime.get(restore.getRestoreName())) {
+					initialStartTime.put(restore.getRestoreName(), restore.getStartTime());
+				}
+						
 				String restoreName = restore.getRestoreName();
 				MediaServer mediaServer = scheduler.getServers().get(restore.getServerName());
 				mediaServer.addActiveRestore(restoreName);				
 				
 				StorageDevice storageDevice = scheduler.getStorageDevices().get(restore.getStorageName());
 				storageDevice.addActiveRestore(restore);
-				System.out.println(" "+ storageDevice.getActiveRestores());
+//				System.out.println(" "+ storageDevice.getActiveRestores());
 				
 				Client client = scheduler.getClients().get(restore.getClientName());
 				client.addRestore(restoreName);
@@ -183,8 +195,7 @@ public class RestoreSystem {
         
         //calculate the throughput for each restore
         final HashMap<String, Double> throughputMap = new HashMap<String, Double>(); //<String (backupName), Double (backupThroughput)>
-        Iterator<Entry<String, StorageDevice>> iterator = scheduler.getStorageDevices().entrySet().iterator();
-             
+        Iterator<Entry<String, StorageDevice>> iterator = scheduler.getStorageDevices().entrySet().iterator();            
         while(iterator.hasNext()){
         	Entry<String, StorageDevice> next = iterator.next();
         	String storageDeviceName = next.getKey();
@@ -251,10 +262,11 @@ public class RestoreSystem {
             if (restore.isActive()) {
                 //It is active
                 final boolean completed = restore.step(timeStep, throughputMap.get(restoreName));
-                if (completed) {           
-                	System.out.println(restoreName+"_"+ restore.getDataBeBackupDay()+ " completed");
+                if (completed || time == (23*3600 + 59*60 +59)*1000) {   //TODO force complete restore avoid the restore left for another day        
+   //             	System.out.println(iterationNumber+": "+ restoreName+"_"+ restore.getDataBeBackupDay()+ " completed");
                 	String requestName = restore.getRestoreName();
                     //if that step completes the backup
+                restore.setRequestTime(Helper.converToTimeSeconds(dayTorestores.get(String.valueOf(iterationNumber)).get(requestName).getRequestTime()));               		             	                	
                 	restore.setActive(false);
                 	restore.setEndTime(time + timeStep);
                 	restore.setCompleted(true);
@@ -276,7 +288,8 @@ public class RestoreSystem {
                     	 	String duration2_2 = durationMap.get(restore.getRestoreName());
                     	 	long duration  = duration1 + duration2;
                     	 	durationMap.replace(restore.getRestoreName(), Helper.convertToTimestamp(duration));
-                    	 	System.out.println(restore.getRestoreName() + " " + duration1 + " + " + duration2 +" = "+ duration);
+                    	 	//System.out.println(iterationNumber);
+                    	 	//System.out.println(restore.getRestoreName() + " " + duration1 + " + " + duration2 +" = "+ duration);
                      }
 				   				    
                     printLog(writer, new LogBuilder(Events.RESTORE_COMPLETED, time + timeStep)
@@ -307,7 +320,12 @@ public class RestoreSystem {
                 }
             }
         }
-
+        
+        // force the restore not span to another day
+        if (time == (23*3600 + 59*60 +59)*1000){
+        		restoreMap = new HashMap<>();
+        }
+        
         if(!restoreMap.isEmpty()) {
             //update smallest remaining and total remaining backups for storage devices
             for (final StorageDevice stu : scheduler.getStorageDevices().values()) {
@@ -353,7 +371,8 @@ public class RestoreSystem {
         unCompletedRequestNumberMap.clear();
         this.numCompletedRestores = 0;
         this.numTotalRestores = 0;
-        
+        initialStartTime = new HashMap<>();
+        durationMap      = new HashMap<>();
         if(null != dayTorestores.get(String.valueOf(iterationNumber))) {
             for(Map.Entry<String, Restore> requestEntry : dayTorestores.get(String.valueOf(iterationNumber)).entrySet()){
     			{
@@ -367,17 +386,85 @@ public class RestoreSystem {
 		this.time = 0;
 		dailyDataRestoreUp = 0;
 		dailyTotalTime = 0;
+
 		
 	}
 	public void writeCompletionStatistics() {
-//		printLog(writer, new LogBuilder(Events.ALL_RESTORE_COMPLETED, time)
-//			.dataSize(dailyDataRestoreUp)
-//			.duration(dailyTotalTime)
-//			.build());
-		writer.println("***** Statistics *****");
+		writer.println("***** Statistics for day" + " " + iterationNumber+  "*****");
+		System.out.println(iterationNumber+":");
         for (Map.Entry<String, String> durationEntry : durationMap.entrySet()) {
+        	
+        		long duration1 = Helper.converToTimeSeconds(durationEntry.getValue());
+        		long duration2 =  initialStartTime.get(durationEntry.getKey()) - Helper.converToTimeSeconds(completedRestoresMap.get(durationEntry.getKey()).getRequestTime())*1000;   
+        		long duration3 = duration1*1000 + duration2;
+        		String RTO = completedRestoresMap.get(durationEntry.getKey()).getRTO();
+        		long RTO_seconds = Helper.converToTimeSeconds(RTO);
+        		String duration = Helper.convertToTimestamp(duration3);
+        		
+        		long MoS = RTO_seconds-Helper.converToTimeSeconds(duration);
+        		DecimalFormat df = new DecimalFormat("0.00");
+        		String MoSPecentage = df.format((float)MoS / RTO_seconds);
+        		
+        		String restoreNameID = durationEntry.getKey().substring(7, durationEntry.getKey().length());
+        		String associatedBackupName = "backup" + restoreNameID;
+        		Map<String, Integer> estimatedRtoreTime = BackupSystem.getEstimatedReatoreTime();      	
+        		int predictedReatoreTime =estimatedRtoreTime.get(associatedBackupName);
+        		float estimatedPerformance = (float) (RTO_seconds - predictedReatoreTime) / RTO_seconds;
+        		String predictPerformance = df.format(estimatedPerformance);
+        		System.out.println(durationEntry.getKey() + " estimate:" +  predictedReatoreTime + " RestoreTime:" + duration3/1000 +" RTO:"+RTO_seconds +" MoS%:"+MoSPecentage+" predict:"+predictPerformance);
         		writer.println("Total Restore Time for " + durationEntry.getKey() + ": " + durationEntry.getValue());
+        		
+        		
+        		//final statistics
+        		ArrayList<String> MoSList = new ArrayList<String>();
+        		if (null == MoSMap.get(durationEntry.getKey())) {
+        			MoSList.add(MoSPecentage);
+        			MoSMap.put(durationEntry.getKey(), MoSList);
+        		}else {
+        			MoSList = MoSMap.get(durationEntry.getKey());
+        			MoSList.add(MoSPecentage);
+        		}
+        		        		
         }
+		if(iterationNumber == DynamicBackupSimulator.iterations) {
+			double MoSNegative = 0;
+			double MoSLessTen = 0;
+			double MoSMoreTen = 0;
+			double totalRequest = 0;
+			double MoSMoreFifty =0;
+			
+			System.out.println("*****restore summary*****");
+			for (Map.Entry<String, ArrayList<String>> MoSEntry: MoSMap.entrySet()) {
+				String restoreName = MoSEntry.getKey();
+				for (int i=0; i< MoSEntry.getValue().size();i++) {
+					totalRequest ++;
+					if (Double.valueOf(MoSEntry.getValue().get(i)) < -0.1) {
+						MoSNegative ++;
+					}
+					
+					if (Double.valueOf(MoSEntry.getValue().get(i)) >=-0.1 && Double.valueOf(MoSEntry.getValue().get(i)) <= 0.1){
+						MoSLessTen ++;
+					}
+					
+					if (Double.valueOf(MoSEntry.getValue().get(i)) >0.1){
+						MoSMoreTen ++;
+					}
+					
+					if (Double.valueOf(MoSEntry.getValue().get(i)) >0.5){
+						MoSMoreFifty ++;
+					}
+				}
+				System.out.print(restoreName + ": ");
+				System.out.print(MoSEntry.getValue());       					
+				System.out.println();
+			}
+			System.out.println("****Statistics Summary*****");
+			System.out.println("total request: " + totalRequest);
+			System.out.println("MoS<0: " + MoSNegative / totalRequest);
+			System.out.println("MoS<10%: " + MoSLessTen / totalRequest);
+			System.out.println("MoS>10%: " +MoSMoreTen / totalRequest);
+			System.out.println("MoS>50%: " +MoSMoreFifty / totalRequest);
+		}
 	}
 	public int getCompletedBackups() {
 		return numCompletedRestores;

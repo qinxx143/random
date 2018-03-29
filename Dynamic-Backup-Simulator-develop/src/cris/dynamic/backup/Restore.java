@@ -17,6 +17,8 @@ public class Restore {
 	private String  storageName;//存储器
     private String  serverName;//服务器
     private String  snapshotChainName;//快照的名字
+    private String  RTO;
+    private int     RPO;
     
     private boolean      active    = false;
     private boolean      completed = false;
@@ -146,6 +148,18 @@ public class Restore {
 	}
 	public long getPenalty(){
 		return this.penalty;
+	}
+	public String getRTO() {
+		return RTO;
+	}
+	public void setRTO(String rTO) {
+		RTO = rTO;
+	}
+	public int getRPO() {
+		return RPO;
+	}
+	public void setRPO(int rPO) {
+		RPO = rPO;
 	}
 
 
